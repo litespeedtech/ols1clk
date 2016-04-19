@@ -164,6 +164,13 @@ function check_os
 }
 
 
+function update_centos_hashlib
+{
+    if [ "x$ISCENTOS" = "x1" ] ; then
+        yum -y install python-hashlib
+    fi
+}
+
 function install_ols_centos
 {
     local VERSION=
@@ -175,7 +182,7 @@ function install_ols_centos
         VERSION=7
     fi
 
-    yum -y install python-hashlib
+    
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed14
     yum -y install lsphp54 lsphp54-common lsphp54-gd lsphp54-process lsphp54-mbstring lsphp54-mysql lsphp54-xml lsphp54-mcrypt lsphp54-pdo lsphp54-imap
@@ -254,7 +261,7 @@ function install_wordpress
     fi
 
     cd "$WORDPRESSPATH"
-    wget http://wordpress.org/latest.tar.gz
+    wget --no-check-certificate http://wordpress.org/latest.tar.gz
     tar -xzvf latest.tar.gz
     rm latest.tar.gz
     #Should I change the permission here?
@@ -461,10 +468,12 @@ function install_ols
 function config_server
 {
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
-        sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
-        VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
+        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" > /dev/nul
+        if [ $? != 0 ] ; then
+            sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
+            VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
 
-        cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
+            cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
 virtualhost wordpress {
 vhRoot                  $WORDPRESSPATH/wordpress/
@@ -504,8 +513,8 @@ PARAMFLAG
 
 END
     
-    mkdir -p $SERVER_ROOT/conf/vhosts/wordpress/
-    cat > $VHOSTCONF <<END 
+            mkdir -p $SERVER_ROOT/conf/vhosts/wordpress/
+            cat > $VHOSTCONF <<END 
 docRoot                   \$VH_ROOT/
 index  {
   useServer               0
@@ -513,11 +522,12 @@ index  {
 }
 END
 
-    #setup password
-        ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
-        echo "admin:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
-        echoYellow "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
-        echoYellow "Finished updating server configuration."
+        #setup password
+            ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
+            echo "admin:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
+            echoYellow "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
+            echoYellow "Finished updating server configuration."
+        fi
     else
         echoRed "$SERVER_ROOT/conf/httpd_config.conf is missing, it seems that something went wrong during openlitespeed installation."
         ALLERRORS=1
@@ -685,6 +695,7 @@ echo
 
 
 ####begin here#####
+update_centos_hashlib
 check_wget
 
 if [ "x$OLSINSTALLED" = "x1" ] ; then
@@ -708,8 +719,8 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     
     if [ "x$WPPORT" = "x80" ] ; then
         echoYellow "Trying to stop some web servers that may be using port 80."
-        killall -9 apache2
-        killall -9 httpd
+        killall -9 apache2  >  /dev/null 2>&1
+        killall -9 httpd    >  /dev/null 2>&1
     fi
 fi
 
