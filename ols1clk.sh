@@ -255,7 +255,6 @@ function uninstall_ols_debian
 
 function install_wordpress
 {
-    pushd .
     if [ ! -e "$WORDPRESSPATH" ] ; then 
         mkdir -p "$WORDPRESSPATH"
     fi
@@ -267,7 +266,7 @@ function install_wordpress
     #Should I change the permission here?
     #chown -R root $WORDPRESSPATH
     #chmod -R 755  $WORDPRESSPATH
-    popd
+    cd -
 
 }
 
@@ -384,13 +383,19 @@ function install_mysql
 function setup_mysql
 {
     local ERROR=
-    mysql -uroot -p$ROOTPASSWORD  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';"
+    
+    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/nul
     if [ $? = 0 ] ; then
-        mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
+        echoGreen "user $USERNAME exists in mysql.user"
     else
-        echoRed "Failed to create mysql user $USERNAME. This user may already exist or a problem occured."
-        echoRed "Please check this and update the wp-config.php file."
-        ERROR="Create user error"
+        mysql -uroot -p$ROOTPASSWORD  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';"
+        if [ $? = 0 ] ; then
+            mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
+        else
+            echoRed "Failed to create mysql user $USERNAME. This user may already exist or a problem occured."
+            echoRed "Please check this and update the wp-config.php file."
+            ERROR="Create user error"
+        fi
     fi
     
     mysql -uroot -p$ROOTPASSWORD  -e "CREATE DATABASE IF NOT EXISTS $DATABASENAME;"
@@ -581,20 +586,20 @@ function uninstall
 
 function usage
 {
-    echoGreen "Usage: $0 [options] [options] ...                                                                           "
-    echoGreen "Options:                                                                                                    "
-    echoGreen "        -a, --adminpassword ADMINPASSWORD, to set the webAdmin password for openlitespeed.                  "
-    echoGreen "        -e, --email EMAIL, to set the email of the administrator.                                    "
-    echoGreen "        -w, --wordpress, set to install and setup wordpress. "
-    echoGreen "            --wordpresspath WORDPRESSPATH, to use an existing wordpress installation instead of a new wordpress install. "
-    echoGreen "        -r, --rootpassworddb ROOTPASSWORD, to set the mysql server root password.                        "
-    echoGreen "        -d, --databasename DATABASENAME, to set the database name to be used by wordpress.                     "
-    echoGreen "        -u, --usernamedb DBUSERNAME, to set the username of wordpress in mysql                         "
-    echoGreen "        -p, --passworddb DBPASSWORD, to set the username of wordpress in mysql                     "
-    echoGreen "        -l, --listenport WORDPRESSPORT, to set the listener port, default is 80                    "
-    echoGreen "            --uninstall, to uninstall OpenLiteSpeed and remove installation directory.                      "
+    echoGreen "Usage: $0 [options] [options] ..."
+    echoGreen "Options:"
+    echoGreen "        -a, --adminpassword ADMINPASSWORD, to set the webAdmin password for openlitespeed."
+    echoGreen "        -e, --email EMAIL, to set the email of the administrator."
+    echoGreen "        -w, --wordpress, set to install and setup wordpress."
+    echoGreen "            --wordpresspath WORDPRESSPATH, to use an existing wordpress installation instead of a new wordpress install."
+    echoGreen "        -r, --rootpassworddb ROOTPASSWORD, to set the mysql server root password."
+    echoGreen "        -d, --databasename DATABASENAME, to set the database name to be used by wordpress."
+    echoGreen "        -u, --usernamedb DBUSERNAME, to set the username of wordpress in mysql."
+    echoGreen "        -p, --passworddb DBPASSWORD, to set the username of wordpress in mysql."
+    echoGreen "        -l, --listenport WORDPRESSPORT, to set the listener port, default is 80."
+    echoGreen "            --uninstall, to uninstall OpenLiteSpeed and remove installation directory."
     echoGreen "            --purgeall, to uninstall OpenLiteSpeed, remove installation directory, and purge all data in mysql."
-    echoGreen "        -h, --help, to display usage.                                                                       "
+    echoGreen "        -h, --help, to display usage."
     echo
 }
 
