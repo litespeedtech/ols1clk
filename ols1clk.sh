@@ -87,8 +87,8 @@ function check_wget
 function display_license
 {
     echoYellow '/*********************************************************************************************'
-    echoYellow '*            Open LiteSpeed One click installation, Version 1.0                              *'
-    echoYellow '*            Copyright (C) 2016 LiteSpeed Technologies, Inc.                                 *'
+    echoYellow '*                    Open LiteSpeed One click installation, Version 1.0                      *'
+    echoYellow '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoYellow '*********************************************************************************************/'
 }
 
@@ -595,7 +595,7 @@ function usage
     echoGreen "        -r, --rootpassworddb ROOTPASSWORD, to set the mysql server root password."
     echoGreen "        -d, --databasename DATABASENAME, to set the database name to be used by wordpress."
     echoGreen "        -u, --usernamedb DBUSERNAME, to set the username of wordpress in mysql."
-    echoGreen "        -p, --passworddb DBPASSWORD, to set the username of wordpress in mysql."
+    echoGreen "        -p, --passworddb DBPASSWORD, to set the password of wordpress in mysql."
     echoGreen "        -l, --listenport WORDPRESSPORT, to set the listener port, default is 80."
     echoGreen "            --uninstall, to uninstall OpenLiteSpeed and remove installation directory."
     echoGreen "            --purgeall, to uninstall OpenLiteSpeed, remove installation directory, and purge all data in mysql."
