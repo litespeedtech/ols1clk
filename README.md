@@ -17,7 +17,8 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 ####Possible Options:
 * **-a**, **--adminpassword ADMINPASSWORD:** used to set the webAdmin password for OpenLiteSpeed.
 * **-e**, **--email EMAIL:** to set the email of the administrator.
-* **-w**, **--wordpresspath WORDPRESSPATH:** to use an existing wordpress installation instead of a new wordpress install.
+* **-w**, **--wordpress:** set to install and setup wordpress.
+* **--wordpresspath WORDPRESSPATH:** to use an existing wordpress installation instead of a new wordpress install.
 * **-r**, **--rootpassworddb ROOTPASSWORD:** to set the mysql server root password.
 * **-d**, **--databasename DATABASENAME:** to set the database name to be used by wordpress.
 * **-u**, **--usernamedb DBUSERNAME:** to set the username of wordpress in mysql.
@@ -31,4 +32,5 @@ Get in Touch
 --------
 
 OpenLiteSpeed has a [Google Group](https://groups.google.com/forum/#!forum/openlitespeed-development). If you find a bug, want to request new features, or just want to talk about OpenLiteSpeed, this is the place to do it.
+
 
