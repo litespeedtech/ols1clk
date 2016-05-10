@@ -28,18 +28,24 @@ ISCENTOS=
 OLSINSTALLED=
 MYSQLINSTALLED=
 
-#Parameters
-ADMINPASSWORD=123456
-ROOTPASSWORD=123456
+#Generate webAdmin and mysql root password randomly
+RAND1=$RANDOM
+RAND2=$RANDOM
+RAND3=$RANDOM
+DATE=`date`
+ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
+ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
 DATABASENAME=olsdbname
 USERNAME=dbuser
-USERPASSWORD=dbpassword
+USERPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
 WORDPRESSPATH=$SERVER_ROOT
 WPPORT=80
 EMAIL=root@localhost
 INSTALLWORDPRESS=0
 
 ALLERRORS=0
+TEMPPASSWORD=
+PASSWORDPROVIDE=
 
 echoYellow()
 {
@@ -87,7 +93,7 @@ function check_wget
 function display_license
 {
     echoYellow '/*********************************************************************************************'
-    echoYellow '*                    Open LiteSpeed One click installation, Version 1.0                      *'
+    echoYellow '*                    Open LiteSpeed One click installation, Version 1.1                      *'
     echoYellow '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoYellow '*********************************************************************************************/'
 }
@@ -230,7 +236,7 @@ function install_ols_debian
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
     apt-get -y update
     apt-get -y install openlitespeed
-    apt-get -y install lsphp56 lsphp56-mysql lsphp56-gd    lsphp56-mcrypt  lsphp56-imap  libonig2 libqdbm14
+    apt-get -y install lsphp56 lsphp56-mysql lsphp56-gd lsphp56-mcrypt  lsphp56-imap  libonig2 libqdbm14
 
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
@@ -263,11 +269,11 @@ function install_wordpress
     wget --no-check-certificate http://wordpress.org/latest.tar.gz
     tar -xzvf latest.tar.gz
     rm latest.tar.gz
-    #Should I change the permission here?
-    #chown -R root $WORDPRESSPATH
-    #chmod -R 755  $WORDPRESSPATH
+    
+    wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wordpress/wp-content/plugins/litespeed-cache/
+    chown -R --reference=autoupdate  $WORDPRESSPATH/wordpress
+    
     cd -
-
 }
 
 
@@ -277,6 +283,7 @@ function setup_wordpress
     if [ -e "$WORDPRESSPATH/wordpress/wp-config-sample.php" ] ; then
         sed -e "s/database_name_here/$DATABASENAME/" -e "s/username_here/$USERNAME/" -e "s/password_here/$USERPASSWORD/" "$WORDPRESSPATH/wordpress/wp-config-sample.php" > "$WORDPRESSPATH/wordpress/wp-config.php"
         if [ -e "$WORDPRESSPATH/wordpress/wp-config.php" ] ; then
+            chown  -R --reference="$WORDPRESSPATH/wordpress/wp-config-sample.php"   "$WORDPRESSPATH/wordpress/wp-config.php"
             echoGreen "Finished setting up WordPress."
         else
             echoRed "WordPress setup failed. You may not have enough privileges to access $WORDPRESSPATH/wordpress/wp-config.php."
@@ -525,7 +532,27 @@ index  {
   useServer               0
   indexFiles              index.php
 }
+
+context / {
+  type                    NULL
+  location                \$VH_ROOT
+  allowBrowse             1
+  indexFiles              index.php
+ 
+  rewrite  {
+    enable                1
+    inherit               1
+    rules                 <<<END_rules
+    rewriteFile           $WORDPRESSPATH/wordpress/.htaccess
+
+END_rules
+
+  }
+}
+
 END
+
+            chown -R lsadm:lsadm $WORDPRESSPATH/conf/
 
         #setup password
             ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
@@ -584,18 +611,51 @@ function uninstall
     fi
 }
 
+function readPassword
+{
+    if [ "x$1" != "x" ] ; then 
+        TEMPPASSWORD=$1
+    else
+        passwd=
+        echoYellow "Please input password for $2(press enter to get a random one):"
+        read passwd
+        if [ "x$passwd" = "x" ] ; then
+            local RAND=$RANDOM
+            local DATE0=`date`
+            TEMPPASSWORD=`echo "$RAND0$DATE0" |  md5sum | base64 | head -c 8`
+        else
+            TEMPPASSWORD=$passwd
+        fi
+    fi
+}
+
+
+function check_password_follow
+{
+    if [ "x$1" = "x--" ] ; then 
+        PASSWORDPROVIDE=$2
+    else
+        PASSWORDPROVIDE=
+    fi
+}
+
+
+
 function usage
 {
     echoGreen "Usage: $0 [options] [options] ..."
     echoGreen "Options:"
-    echoGreen "        -a, --adminpassword ADMINPASSWORD, to set the webAdmin password for openlitespeed."
+    echoGreen "        -a, --adminpassword [-- webAdminPassword], to set the webAdmin password for openlitespeed instead a random one."
+    echoGreen "            If you omit [-- webAdminPassword], ols1clk will prompt you to provide this password during installation."
     echoGreen "        -e, --email EMAIL, to set the email of the administrator."
     echoGreen "        -w, --wordpress, set to install and setup wordpress."
     echoGreen "            --wordpresspath WORDPRESSPATH, to use an existing wordpress installation instead of a new wordpress install."
-    echoGreen "        -r, --rootpassworddb ROOTPASSWORD, to set the mysql server root password."
+    echoGreen "        -r, --rootpassworddb [-- mysqlRootPassword], to set the mysql server root password instead a random one."
+    echoGreen "            If you omit [-- mysqlRootPassword], ols1clk will prompt you to provide this password during installation."
     echoGreen "        -d, --databasename DATABASENAME, to set the database name to be used by wordpress."
     echoGreen "        -u, --usernamedb DBUSERNAME, to set the username of wordpress in mysql."
-    echoGreen "        -p, --passworddb DBPASSWORD, to set the password of wordpress in mysql."
+    echoGreen "        -p, --passworddb [-- databasePassword], to set the password of the table used by wordpress in mysql instead a random one."
+    echoGreen "            If you omit [-- databasePassword], ols1clk will prompt you to provide this password during installation."
     echoGreen "        -l, --listenport WORDPRESSPORT, to set the listener port, default is 80."
     echoGreen "            --uninstall, to uninstall OpenLiteSpeed and remove installation directory."
     echoGreen "            --purgeall, to uninstall OpenLiteSpeed, remove installation directory, and purge all data in mysql."
@@ -614,9 +674,14 @@ getCurStatus
 
 while [ "$1" != "" ]; do
     case $1 in
-        -a | --adminpassword )      shift
-                                    ADMINPASSWORD=$1
+        -a | --adminpassword )      check_password_follow $2 $3
+                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+                                        shift
+                                        shift
+                                    fi
+                                    ADMINPASSWORD=$PASSWORDPROVIDE
                                     ;;
+
         -e | --email )              shift
                                     EMAIL=$1
                                     ;;
@@ -627,17 +692,26 @@ while [ "$1" != "" ]; do
                                     INSTALLWORDPRESS=1
                                     ;;
                                     
-        -r | --rootpassworddb )     shift
-                                    ROOTPASSWORD=$1
+        -r | --rootpassworddb )     check_password_follow $2 $3
+                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+                                        shift
+                                        shift
+                                    fi
+                                    ROOTPASSWORD=$PASSWORDPROVIDE
                                     ;;
+
         -d | --databasename )       shift
                                     DATABASENAME=$1
                                     ;;
         -u | --usernamedb )         shift
                                     USERNAME=$1
                                     ;;
-        -p | --passworddb )         shift
-                                    USERPASSWORD=$1
+        -p | --passworddb )         check_password_follow $2 $3
+                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+                                        shift
+                                        shift
+                                    fi
+                                    USERPASSWORD=$PASSWORDPROVIDE
                                     ;;
                                     
         -l | --listenport )         shift
@@ -662,7 +736,14 @@ while [ "$1" != "" ]; do
     shift
 done
 
-echo 
+readPassword "$ADMINPASSWORD" "webAdmin password"
+ADMINPASSWORD=$TEMPPASSWORD
+readPassword "$ROOTPASSWORD" "mysql root password"
+ROOTPASSWORD=$TEMPPASSWORD
+readPassword "$USERPASSWORD" "mysql user password"
+USERPASSWORD=$TEMPPASSWORD
+
+echo
 echoRed    "Starting to install openlitespeed to $SERVER_ROOT/ with below parameters,"
 echoYellow "WebAdmin passord: $ADMINPASSWORD"
 echoYellow "WebAdmin email: $EMAIL"
@@ -670,6 +751,7 @@ echoYellow "Mysql Root Password: $ROOTPASSWORD"
 echoYellow "Database name: $DATABASENAME"
 echoYellow "Database username: $USERNAME"
 echoYellow "Database passord: $USERPASSWORD"
+
 
 WORDPRESSINSTALLED=
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
@@ -731,15 +813,21 @@ fi
 
 $SERVER_ROOT/bin/lswsctrl start
 
+echo "WebAdmin password is [$ADMINPASSWORD] and mysql root password is [$ROOTPASSWORD]." > $SERVER_ROOT/password
+echoRed "Please be aware that your password was written to file $SERVER_ROOT/password." 
+
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-        echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site. Enjoy!"
+        echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
+        echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
+        echoGreen "Enjoy!"
     fi
 else
     echoYellow "Installation finished. It seems some errors occured, please check this as you may need to manually fix them."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
+        echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
     fi
 fi  
 echoGreen "If you run into any problems, they can sometimes be fixed by purgeall and reinstalling."
