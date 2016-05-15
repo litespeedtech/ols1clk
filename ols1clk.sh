@@ -745,12 +745,12 @@ USERPASSWORD=$TEMPPASSWORD
 
 echo
 echoRed    "Starting to install openlitespeed to $SERVER_ROOT/ with below parameters,"
-echoYellow "WebAdmin passord: $ADMINPASSWORD"
+echoYellow "WebAdmin password: $ADMINPASSWORD"
 echoYellow "WebAdmin email: $EMAIL"
 echoYellow "Mysql Root Password: $ROOTPASSWORD"
 echoYellow "Database name: $DATABASENAME"
 echoYellow "Database username: $USERNAME"
-echoYellow "Database passord: $USERPASSWORD"
+echoYellow "Database password: $USERPASSWORD"
 
 
 WORDPRESSINSTALLED=
