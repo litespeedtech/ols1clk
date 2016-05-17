@@ -93,7 +93,7 @@ function check_wget
 function display_license
 {
     echoYellow '/*********************************************************************************************'
-    echoYellow '*                    Open LiteSpeed One click installation, Version 1.1                      *'
+    echoYellow '*                    Open LiteSpeed One click installation, Version 1.2                      *'
     echoYellow '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoYellow '*********************************************************************************************/'
 }
@@ -267,7 +267,7 @@ function install_wordpress
 
     cd "$WORDPRESSPATH"
     wget --no-check-certificate http://wordpress.org/latest.tar.gz
-    tar -xzvf latest.tar.gz
+    tar -xzvf latest.tar.gz  >  /dev/null 2>&1
     rm latest.tar.gz
     
     wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wordpress/wp-content/plugins/litespeed-cache/
@@ -298,27 +298,40 @@ function setup_wordpress
 
 function test_mysql_password
 {
- #test it is the current password
-    CURROOTPASSWORD=
+    CURROOTPASSWORD=$ROOTPASSWORD
     TESTPASSWORDERROR=0
-    printf '\033[31mPlease input the current root password:\033[0m'
-    read answer
-    mysqladmin -uroot -p$answer password $answer
-    if [ $? = 0 ] ; then
-        CURROOTPASSWORD=$answer
-    else
-        echoRed "root password is incorrect. 1 attempt remaining."
+    
+    #test it is the current password
+    mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
+    if [ $? != 0 ] ; then
         printf '\033[31mPlease input the current root password:\033[0m'
         read answer
-        mysqladmin -u root -p$answer password $answer
+        mysqladmin -uroot -p$answer password $answer
         if [ $? = 0 ] ; then
             CURROOTPASSWORD=$answer
         else
-            echoRed "root password is incorrect. 0 attempts remaining."
-            echo
-            TESTPASSWORDERROR=1
+            echoRed "root password is incorrect. 2 attempts remaining."
+            printf '\033[31mPlease input the current root password:\033[0m'
+            read answer
+            mysqladmin -u root -p$answer password $answer
+            if [ $? = 0 ] ; then
+                CURROOTPASSWORD=$answer
+            else
+                echoRed "root password is incorrect. 1 attempt remaining."
+                printf '\033[31mPlease input the current root password:\033[0m'
+                read answer
+                mysqladmin -u root -p$answer password $answer
+                if [ $? = 0 ] ; then
+                    CURROOTPASSWORD=$answer
+                else
+                    echoRed "root password is incorrect. 0 attempts remaining."
+                    echo
+                    TESTPASSWORDERROR=1
+                fi
+            fi
         fi
     fi
+
     export CURROOTPASSWORD=$CURROOTPASSWORD
     export TESTPASSWORDERROR=$TESTPASSWORDERROR
 }
@@ -327,18 +340,28 @@ function install_mysql
 {
     if [ "x$ISCENTOS" = "x1" ] ; then
         yum -y install mysql-server
+        if [ $? != 0 ] ; then
+            echoRed "An error occured during installation of Mysql-server. Please fix this error and try again."
+            echoRed "You may want to manually run the command 'yum -y install mysql-server' to check. Aborting installation!"
+            exit 1
+        fi
         service mysqld start
     else
         apt-get -y -f --force-yes install mysql-server
+        if [ $? != 0 ] ; then
+            echoRed "An error occured during installation of Mysql-server. Please fix this error and try again."
+            echoRed "You may want to manually run the command 'apt-get -y -f --force-yes install mysql-server' to check. Aborting installation!"
+            exit 1
+        fi
         mysqld start
     fi
-    #chkconfig mysqld on
+    
     if [ $? != 0 ] ; then
-        echoRed "An error occured during installation of Mysql-server."
+        echoRed "An error occured during starting service of Mysql-server. "
         echoRed "Please fix this error and try again. Aborting installation!"
         exit 1
-    fi  
-   
+    fi
+    
     #mysql_secure_installation
     #mysql_install_db
     mysqladmin -u root password $ROOTPASSWORD
@@ -390,6 +413,9 @@ function install_mysql
 function setup_mysql
 {
     local ERROR=
+
+    #delete user if exists because I need to set the password
+    mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 
     
     echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/nul
     if [ $? = 0 ] ; then
@@ -433,23 +459,20 @@ function purgedatabase
         echoYellow "Mysql-server not installed."
     else
         local ERROR=0
-        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
-        if [ $? != 0 ] ; then
-            test_mysql_password
-            
-            if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
-                echoRed "Failed to purge database."
-                echo
-                ERROR=1
-                ALLERRORS=1
-            else
-                ROOTPASSWORD=$CURROOTPASSWORD
-            fi
+        test_mysql_password
+
+        if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
+            echoRed "Failed to purge database."
+            echo
+            ERROR=1
+            ALLERRORS=1
+        else
+            ROOTPASSWORD=$CURROOTPASSWORD
         fi
-        
+
         if [ "x$ERROR" = "x0" ] ; then
-            mysql -uroot -p$ROOTPASSWORD  -e "DROP USER $USERNAME@localhost;"
-            mysql -uroot -p$ROOTPASSWORD  -e "DROP DATABASE $DATABASENAME;"
+            mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';"  
+            mysql -uroot -p$ROOTPASSWORD  -e "DROP DATABASE IF EXISTS $DATABASENAME;"
             echoYellow "Database purged."
         fi
     fi
@@ -551,14 +574,22 @@ END_rules
 }
 
 END
-
             chown -R lsadm:lsadm $WORDPRESSPATH/conf/
-
+        fi
+        
         #setup password
-            ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
+        ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
+        if [ $? = 0 ] ; then
             echo "admin:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
-            echoYellow "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
-            echoYellow "Finished updating server configuration."
+            if [ $? = 0 ] ; then
+                echoYellow "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
+                echoYellow "Finished updating server configuration."
+                
+                #write the password file for record and remove the previous file.
+                echo "WebAdmin password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
+            else
+                echoYellow "OpenLiteSpeed webAdmin password not changed."
+            fi
         fi
     else
         echoRed "$SERVER_ROOT/conf/httpd_config.conf is missing, it seems that something went wrong during openlitespeed installation."
@@ -794,14 +825,22 @@ install_ols
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
         install_mysql
+    else
+        test_mysql_password
     fi    
 
     if [ "x$WORDPRESSINSTALLED" != "x1" ] ; then
         install_wordpress
         setup_wordpress
+    
+        if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
+            echoYellow "Mysql setup byppassed due to not know the root password."
+        else
+            ROOTPASSWORD=$CURROOTPASSWORD
+            setup_mysql
+        fi
     fi
-
-    setup_mysql
+    
     config_server
     
     if [ "x$WPPORT" = "x80" ] ; then
@@ -811,17 +850,17 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     fi
 fi
 
+$SERVER_ROOT/bin/lswsctrl stop
 $SERVER_ROOT/bin/lswsctrl start
 
-echo "WebAdmin password is [$ADMINPASSWORD] and mysql root password is [$ROOTPASSWORD]." > $SERVER_ROOT/password
-echoRed "Please be aware that your password was written to file $SERVER_ROOT/password." 
+echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
+echoYellow "Please be aware that your password was written to file '$SERVER_ROOT/password'." 
 
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
         echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
-        echoGreen "Enjoy!"
     fi
 else
     echoYellow "Installation finished. It seems some errors occured, please check this as you may need to manually fix them."
@@ -830,7 +869,9 @@ else
         echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
     fi
 fi  
+echo
 echoGreen "If you run into any problems, they can sometimes be fixed by purgeall and reinstalling."
-echoGreen 'Thanks for using "OpenLiteSpeed One click installation."'
+echoGreen 'Thanks for using "OpenLiteSpeed One click installation".'
+echoGreen "Enjoy!"
 echo
 echo
