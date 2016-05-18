@@ -130,14 +130,9 @@ function check_os
             if [ $? = 0 ] ; then
                 OSVER=UBUNTU14
             else
-                cat /etc/lsb-release | grep "DISTRIB_RELEASE=15." > /dev/null
+                cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." > /dev/null
                 if [ $? = 0 ] ; then
-                    OSVER=UBUNTU15
-                else
-                    cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." > /dev/null
-                    if [ $? = 0 ] ; then
-                        OSVER=UBUNTU16
-                    fi
+                    OSVER=UBUNTU16
                 fi
             fi
         fi    
@@ -159,7 +154,7 @@ function check_os
     fi
 
     if [ "x$OSVER" = "x" ] ; then
-        echoRed "Sorry, currently one click installation only supports some versions of Centos, Debian and Ubuntu."
+        echoRed "Sorry, currently one click installation only supports Centos(5-7), Debian(7-9) and Ubuntu(12,14,16)."
         echo 
         exit 1
     else
@@ -226,8 +221,6 @@ function install_ols_debian
         NAME=precise
     elif [ "x$OSVER" = "xUBUNTU14" ] ; then
         NAME=trusty
-    elif [ "x$OSVER" = "xUBUNTU15" ] ; then
-        NAME=wily 
     elif [ "x$OSVER" = "xUBUNTU16" ] ; then
         NAME=xenial
     fi
@@ -776,12 +769,12 @@ USERPASSWORD=$TEMPPASSWORD
 
 echo
 echoRed    "Starting to install openlitespeed to $SERVER_ROOT/ with below parameters,"
-echoYellow "WebAdmin passord: $ADMINPASSWORD"
+echoYellow "WebAdmin password: $ADMINPASSWORD"
 echoYellow "WebAdmin email: $EMAIL"
-echoYellow "Mysql Root Password: $ROOTPASSWORD"
+echoYellow "Mysql root Password: $ROOTPASSWORD"
 echoYellow "Database name: $DATABASENAME"
 echoYellow "Database username: $USERNAME"
-echoYellow "Database passord: $USERPASSWORD"
+echoYellow "Database password: $USERPASSWORD"
 
 
 WORDPRESSINSTALLED=
