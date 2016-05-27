@@ -43,6 +43,13 @@ WPPORT=80
 EMAIL=root@localhost
 INSTALLWORDPRESS=0
 
+#All lsphp versions, keep using two digits to identify a version!!!
+#otherwise, need to update the uninstall function which will check the version
+LSPHPVERLIST=(54 55 56 70)
+
+#default version
+LSPHPVER=56
+
 ALLERRORS=0
 TEMPPASSWORD=
 PASSWORDPROVIDE=
@@ -93,7 +100,7 @@ function check_wget
 function display_license
 {
     echoYellow '/*********************************************************************************************'
-    echoYellow '*                    Open LiteSpeed One click installation, Version 1.2                      *'
+    echoYellow '*                    Open LiteSpeed One click installation, Version 1.3                      *'
     echoYellow '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoYellow '*********************************************************************************************/'
 }
@@ -175,6 +182,7 @@ function update_centos_hashlib
 function install_ols_centos
 {
     local VERSION=
+    local ND=
     if [ "x$OSVER" = "xCENTOS5" ] ; then
         VERSION=5
     elif [ "x$OSVER" = "xCENTOS6" ] ; then
@@ -183,28 +191,54 @@ function install_ols_centos
         VERSION=7
     fi
 
+    if [ "x$LSPHPVER" = "x70" ] ; then
+        ND=nd
+    fi
+    
     
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed14
-    yum -y install lsphp54 lsphp54-common lsphp54-gd lsphp54-process lsphp54-mbstring lsphp54-mysql lsphp54-xml lsphp54-mcrypt lsphp54-pdo lsphp54-imap
+    yum -y install lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
         ALLERRORS=1
     else
-        ln -sf $SERVER_ROOT/lsphp54/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
+        ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
     fi
 }
 
 function uninstall_ols_centos
 {
     yum -y remove openlitespeed14
-    yum -y remove lsphp54 lsphp54-common lsphp54-gd lsphp54-process lsphp54-mbstring lsphp54-mysql lsphp54-xml lsphp54-mcrypt lsphp54-pdo lsphp54-imap
-    if [ $? != 0 ] ; then
-        echoRed "An error occured while uninstalling openlitespeed."
-        ALLERRORS=1
-    else
-        rm -rf $SERVER_ROOT/
+    
+    if [ "x$LSPHPVER" = "x56" ] ; then
+        yum list installed | grep lsphp | grep process >  /dev/null 2>&1
+        if [ $? = 0 ] ; then
+            local LSPHPSTR=`yum list installed | grep lsphp | grep process`
+            LSPHPVER=`echo $LSPHPSTR | awk '{print substr($0,6,2)}'`
+            echoYellow "Current install lsphp version is $LSPHPVER"
+        else
+            echoRed "Uninstallation can not get the version infomation of the current installed lsphp."
+            echoRed "Can not uninstall lsphp correctly."
+            LSPHPVER=
+        fi
+
     fi
+
+    local ND=nd
+    if [ "x$LSPHPVER" = "x70" ] ; then
+        ND=nd
+    fi
+    
+    if [ "x$LSPHPVER" != "x" ] ; then
+        yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
+        if [ $? != 0 ] ; then
+            echoRed "An error occured while uninstalling openlitespeed."
+            ALLERRORS=1
+        fi
+    fi
+    
+    rm -rf $SERVER_ROOT/
 }
 
 function install_ols_debian
@@ -229,13 +263,13 @@ function install_ols_debian
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
     apt-get -y update
     apt-get -y install openlitespeed
-    apt-get -y install lsphp56 lsphp56-mysql lsphp56-gd lsphp56-mcrypt  lsphp56-imap  libonig2 libqdbm14
+    apt-get -y install lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt  lsphp$LSPHPVER-imap  libonig2 libqdbm14
 
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
         ALLERRORS=1
     else
-        ln -sf $SERVER_ROOT/lsphp56/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
+        ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
     fi
 }
 
@@ -243,13 +277,29 @@ function install_ols_debian
 function uninstall_ols_debian
 {
     apt-get -y --purge remove openlitespeed
-    apt-get -y --purge remove lsphp56 lsphp56-mysql lsphp56-gd lsphp56-mcrypt lsphp56-imap
-    if [ $? != 0 ] ; then
-        echoRed "An error occured while uninstalling openlitespeed."
-        ALLERRORS=1
-    else
-        rm -rf $SERVER_ROOT/
+    
+    if [ "x$LSPHPVER" = "x56" ] ; then
+        dpkg -l | grep lsphp | grep mysql >  /dev/null 2>&1
+        if [ $? = 0 ] ; then
+            local LSPHPSTR=`dpkg -l | grep lsphp | grep mysql`
+            LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
+            echoYellow "Current install lsphp version is $LSPHPVER"
+        else
+            echoRed "Uninstallation can not get the version infomation of the current installed lsphp."
+            echoRed "Can not uninstall lsphp correctly."
+            LSPHPVER=
+        fi
     fi
+
+    if [ "x$LSPHPVER" != "x" ] ; then
+        apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-imap
+        if [ $? != 0 ] ; then
+            echoRed "An error occured while uninstalling openlitespeed."
+            ALLERRORS=1
+        fi
+    fi
+
+    rm -rf $SERVER_ROOT/
 }
 
 function install_wordpress
@@ -474,7 +524,7 @@ function purgedatabase
 function uninstall_result
 {
     if [ "x$ALLERRORS" = "x0" ] ; then
-        echoGreen "Uninstallation finished without error."
+        echoGreen "Uninstallation finished."
     else
         echoYellow "Uninstallation finished - some errors occured. Please check these as you may need to manually fix them."
     fi  
@@ -672,6 +722,7 @@ function usage
     echoGreen "        -a, --adminpassword [-- webAdminPassword], to set the webAdmin password for openlitespeed instead of using a random one."
     echoGreen "            If you omit [-- webAdminPassword], ols1clk will prompt you to provide this password during installation."
     echoGreen "        -e, --email EMAIL, to set the email of the administrator."
+    echoGreen "            --lsphpversion VERSION, to set the version of lsphp, such as 56, now we support '${LSPHPVERLIST[@]}'."
     echoGreen "        -w, --wordpress, set to install and setup wordpress."
     echoGreen "            --wordpresspath WORDPRESSPATH, to use an existing wordpress installation instead of a new wordpress install."
     echoGreen "        -r, --rootpassworddb [-- mysqlRootPassword], to set the mysql server root password instead of using a random one."
@@ -709,6 +760,18 @@ while [ "$1" != "" ]; do
         -e | --email )              shift
                                     EMAIL=$1
                                     ;;
+                                    
+             --lsphpversion )       shift
+                                    #echo lsphpversion: $1
+                                    cnt=${#LSPHPVERLIST[@]}
+                                    for (( i = 0 ; i < cnt ; i++ ))
+                                    do
+                                        if [ "x$1" = "x${LSPHPVERLIST[$i]}" ] ; then
+                                            LSPHPVER=$1
+                                        fi
+                                    done
+                                    ;;                                    
+                                    
         -w | --wordpress )          INSTALLWORDPRESS=1
                                     ;;
              --wordpresspath )      shift
@@ -760,6 +823,16 @@ while [ "$1" != "" ]; do
     shift
 done
 
+
+
+if [ "x$OSVER" = "xCENTOS5" ] ; then
+    if [ "x$LSPHPVER" = "x70" ] ; then
+        echoYellow "We do not support lsphp7 on Centos 5, will use lsphp56."
+        LSPHPVER=56
+    fi
+fi
+
+
 readPassword "$ADMINPASSWORD" "webAdmin password"
 ADMINPASSWORD=$TEMPPASSWORD
 readPassword "$ROOTPASSWORD" "mysql root password"
@@ -775,6 +848,7 @@ echoYellow "Mysql root Password: $ROOTPASSWORD"
 echoYellow "Database name: $DATABASENAME"
 echoYellow "Database username: $USERNAME"
 echoYellow "Database password: $USERPASSWORD"
+echoYellow "lsphp version: $LSPHPVER"
 
 
 WORDPRESSINSTALLED=
@@ -848,6 +922,7 @@ $SERVER_ROOT/bin/lswsctrl start
 
 echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
 echoYellow "Please be aware that your password was written to file '$SERVER_ROOT/password'." 
+echoYellow "And your lsphp version is $LSPHPVER."
 
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
