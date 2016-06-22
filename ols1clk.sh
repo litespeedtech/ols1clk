@@ -162,6 +162,8 @@ function check_os
 
     if [ "x$OSVER" = "x" ] ; then
         echoRed "Sorry, currently one click installation only supports Centos(5-7), Debian(7-9) and Ubuntu(12,14,16)."
+        echoRed "You can download the source code and build from it."
+        echoRed "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         echo 
         exit 1
     else
@@ -193,11 +195,13 @@ function install_ols_centos
 
     if [ "x$LSPHPVER" = "x70" ] ; then
         ND=nd
+        if [ "x$OSVER" = "xCENTOS5" ] ; then
+            rpm -ivh http://repo.mysql.com/mysql-community-release-el5.rpm
+        fi
     fi
     
-    
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
-    yum -y install openlitespeed14
+    yum -y install openlitespeed
     yum -y install lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
@@ -209,7 +213,7 @@ function install_ols_centos
 
 function uninstall_ols_centos
 {
-    yum -y remove openlitespeed14
+    yum -y remove openlitespeed
     
     if [ "x$LSPHPVER" = "x56" ] ; then
         yum list installed | grep lsphp | grep process >  /dev/null 2>&1
@@ -825,12 +829,12 @@ done
 
 
 
-if [ "x$OSVER" = "xCENTOS5" ] ; then
-    if [ "x$LSPHPVER" = "x70" ] ; then
-        echoYellow "We do not support lsphp7 on Centos 5, will use lsphp56."
-        LSPHPVER=56
-    fi
-fi
+#if [ "x$OSVER" = "xCENTOS5" ] ; then
+#    if [ "x$LSPHPVER" = "x70" ] ; then
+#        echoYellow "We do not support lsphp7 on Centos 5, will use lsphp56."
+#        LSPHPVER=56
+#    fi
+#fi
 
 
 readPassword "$ADMINPASSWORD" "webAdmin password"
@@ -922,7 +926,6 @@ $SERVER_ROOT/bin/lswsctrl start
 
 echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
 echoYellow "Please be aware that your password was written to file '$SERVER_ROOT/password'." 
-echoYellow "And your lsphp version is $LSPHPVER."
 
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
