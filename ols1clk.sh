@@ -100,7 +100,7 @@ function check_wget
 function display_license
 {
     echoYellow '/*********************************************************************************************'
-    echoYellow '*                    Open LiteSpeed One click installation, Version 1.3                      *'
+    echoYellow '*                    Open LiteSpeed One click installation, Version 1.4                      *'
     echoYellow '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoYellow '*********************************************************************************************/'
 }
@@ -267,8 +267,12 @@ function install_ols_debian
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
     apt-get -y update
     apt-get -y install openlitespeed
-    apt-get -y install lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt  lsphp$LSPHPVER-imap  libonig2 libqdbm14
+    apt-get -y install lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  libonig2 libqdbm14
 
+    if [ "x$LSPHPVER" != "x70" ] ; then
+        apt-get -y install lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
+    fi
+    
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
         ALLERRORS=1
@@ -296,7 +300,12 @@ function uninstall_ols_debian
     fi
 
     if [ "x$LSPHPVER" != "x" ] ; then
-        apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-imap
+        apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap
+        
+        if [ "x$LSPHPVER" != "x70" ] ; then
+            apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
+        fi
+        
         if [ $? != 0 ] ; then
             echoRed "An error occured while uninstalling openlitespeed."
             ALLERRORS=1
@@ -400,7 +409,8 @@ function install_mysql
             echoRed "You may want to manually run the command 'apt-get -y -f --force-yes install mysql-server' to check. Aborting installation!"
             exit 1
         fi
-        mysqld start
+        #mysqld start
+        service mysql start
     fi
     
     if [ $? != 0 ] ; then
