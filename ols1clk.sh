@@ -36,7 +36,7 @@ DATE=`date`
 ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
 ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
 DATABASENAME=olsdbname
-USERNAME=dbuser
+USERNAME=olsdbuser
 USERPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
 WORDPRESSPATH=$SERVER_ROOT
 WPPORT=80
@@ -267,10 +267,12 @@ function install_ols_debian
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
     apt-get -y update
     apt-get -y install openlitespeed
-    apt-get -y install lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  libonig2 libqdbm14
+    apt-get -y install lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  
 
     if [ "x$LSPHPVER" != "x70" ] ; then
         apt-get -y install lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
+    else
+       apt-get -y install lsphp$LSPHPVER-common
     fi
     
     if [ $? != 0 ] ; then
@@ -303,7 +305,9 @@ function uninstall_ols_debian
         apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap
         
         if [ "x$LSPHPVER" != "x70" ] ; then
-            apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
+            apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
+        else
+            apt-get -y --purge remove lsphp$LSPHPVER-common
         fi
         
         if [ $? != 0 ] ; then
@@ -509,6 +513,24 @@ function setup_mysql
     fi
 }
 
+function resetmysqlroot
+{
+    MYSQLNAME=mysql
+    if [ "x$ISCENTOS" = "x1" ] ; then
+        MYSQLNAME=mysqld
+    fi
+    
+    service $MYSQLNAME stop
+    
+    DEFAULTPASSWD=$1
+    
+    echo "update user set Password=PASSWORD('$DEFAULTPASSWD') where user='root'; flush privileges; exit; " > /tmp/resetmysqlroot.sql
+    mysqld_safe --skip-grant-tables &
+    #mysql --user=root mysql < /tmp/resetmysqlroot.sql
+    mysql --user=root mysql -e "update user set Password=PASSWORD('$DEFAULTPASSWD') where user='root'; flush privileges; exit; "
+    sleep 1            
+    service $MYSQLNAME restart
+}
 
 function purgedatabase
 {
@@ -523,9 +545,12 @@ function purgedatabase
             echo
             ERROR=1
             ALLERRORS=1
+            #ROOTPASSWORD=123456
+            #resetmysqlroot $ROOTPASSWORD
         else
             ROOTPASSWORD=$CURROOTPASSWORD
         fi
+        
 
         if [ "x$ERROR" = "x0" ] ; then
             mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';"  
@@ -839,12 +864,12 @@ done
 
 
 
-#if [ "x$OSVER" = "xCENTOS5" ] ; then
-#    if [ "x$LSPHPVER" = "x70" ] ; then
-#        echoYellow "We do not support lsphp7 on Centos 5, will use lsphp56."
-#        LSPHPVER=56
-#    fi
-#fi
+if [ "x$OSVER" = "xCENTOS5" ] ; then
+   if [ "x$LSPHPVER" = "x70" ] ; then
+       echoYellow "We do not support lsphp7 on Centos 5, will use lsphp56."
+       LSPHPVER=56
+   fi
+fi
 
 
 readPassword "$ADMINPASSWORD" "webAdmin password"
