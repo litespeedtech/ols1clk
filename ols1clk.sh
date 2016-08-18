@@ -785,6 +785,7 @@ function check_value_follow
     fi
 }
 
+
 function usage
 {
     echoY "Usage:                             " "$0 [options] [options] ..."
@@ -882,8 +883,13 @@ while [ "$1" != "" ]; do
                                     ADMINPASSWORD=$FOLLOWPARAM
                                     ;;
 
-        -e | --email )              shift
-                                    EMAIL=$1
+        -e | --email )              check_value_follow $2
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
+                                        shift
+                                        EMAIL=$FOLLOWPARAM
+                                    else
+                                        echoR "Error: wrong email address after --email, bypassed."
+                                    fi
                                     ;;
                                     
              --lsphp )              shift
@@ -899,10 +905,17 @@ while [ "$1" != "" ]; do
         -w | --wordpress )          INSTALLWORDPRESS=1
                                     ;;
                                     
-             --wordpressplus )      shift
-                                    SITEDOMAIN=$1
-                                    INSTALLWORDPRESS=1
-                                    INSTALLWORDPRESSPLUS=1
+             --wordpressplus )      check_value_follow $2
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
+                                        shift
+                                        SITEDOMAIN=$FOLLOWPARAM
+                                        INSTALLWORDPRESS=1
+                                        INSTALLWORDPRESSPLUS=1
+                                    else
+                                        echoR "Error: wrong domain follows --wordpressplus, check usage."
+                                        usage
+                                        exit 0
+                                    fi
                                     ;;
                                     
              --wordpresspath )      shift
