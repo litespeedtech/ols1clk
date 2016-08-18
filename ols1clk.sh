@@ -63,10 +63,9 @@ LSPHPVER=56
 
 ALLERRORS=0
 TEMPPASSWORD=
-PASSWORDPROVIDE=
 
 ACTION=INSTALL
-
+FOLLOWPARAM=
 
 echoY()
 {
@@ -776,18 +775,15 @@ function read_password
 }
 
 
-function check_password_follow
+function check_value_follow
 {
+    FOLLOWPARAM=
     #test if first letter is - or not.
     local PARAMCHAR=`echo $1 | awk '{print substr($0,1,1)}'`
-    if [ "x$PARAMCHAR" = "x-" ] ; then 
-        PASSWORDPROVIDE=
-    else
-        PASSWORDPROVIDE=$1
+    if [ "x$PARAMCHAR" != "x-" ] ; then 
+        FOLLOWPARAM=$1
     fi
 }
-
-
 
 function usage
 {
@@ -879,11 +875,11 @@ display_license
 
 while [ "$1" != "" ]; do
     case $1 in
-        -a | --adminpassword )      check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+        -a | --adminpassword )      check_value_follow $2
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    ADMINPASSWORD=$PASSWORDPROVIDE
+                                    ADMINPASSWORD=$FOLLOWPARAM
                                     ;;
 
         -e | --email )              shift
@@ -914,11 +910,11 @@ while [ "$1" != "" ]; do
                                     INSTALLWORDPRESS=1
                                     ;;
                                     
-        -r | --dbrootpassword )     check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+        -r | --dbrootpassword )     check_value_follow $2
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    ROOTPASSWORD=$PASSWORDPROVIDE
+                                    ROOTPASSWORD=$FOLLOWPARAM
                                     ;;
 
              --dbname )             shift
@@ -927,11 +923,11 @@ while [ "$1" != "" ]; do
              --dbuser )             shift
                                     USERNAME=$1
                                     ;;
-             --dbpassword )         check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+             --dbpassword )         check_value_follow $2
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    USERPASSWORD=$PASSWORDPROVIDE
+                                    USERPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
              --listenport )         shift
@@ -942,11 +938,11 @@ while [ "$1" != "" ]; do
                                     WPUSER=$1
                                     ;;
                                     
-             --wppassword )         check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+             --wppassword )         check_value_follow $2
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    WPPASSWORD=$PASSWORDPROVIDE
+                                    WPPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
              --wplang )             shift
