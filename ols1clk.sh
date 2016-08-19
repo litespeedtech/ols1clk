@@ -777,11 +777,26 @@ function read_password
 
 function check_value_follow
 {
-    FOLLOWPARAM=
+    FOLLOWPARAM=$1
+    local PARAM=$1
+    local KEYWORD=$2
+    
     #test if first letter is - or not.
-    local PARAMCHAR=`echo $1 | awk '{print substr($0,1,1)}'`
-    if [ "x$PARAMCHAR" != "x-" ] ; then 
-        FOLLOWPARAM=$1
+    if [ "x$1" = "x-n" ] || [ "x$1" = "x-e" ] || [ "x$1" = "x-E" ] ; then
+        FOLLOWPARAM=
+    else
+        local PARAMCHAR=`echo $1 | awk '{print substr($0,1,1)}'`
+        if [ "x$PARAMCHAR" = "x-" ] ; then 
+            FOLLOWPARAM=
+        fi
+    fi
+
+    if [ "x$FOLLOWPARAM" = "x" ] ; then
+        if [ "x$KEYWORD" != "x" ] ; then
+            echoR "Error: '$PARAM' is not a valid '$KEYWORD', please check and try again."
+            usage
+            exit 1
+        fi
     fi
 }
 
@@ -876,23 +891,20 @@ display_license
 
 while [ "$1" != "" ]; do
     case $1 in
-        -a | --adminpassword )      check_value_follow $2
+        -a | --adminpassword )      check_value_follow "$2" ""
                                     if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
                                     ADMINPASSWORD=$FOLLOWPARAM
                                     ;;
 
-        -e | --email )              check_value_follow $2
-                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
-                                        shift
-                                        EMAIL=$FOLLOWPARAM
-                                    else
-                                        echoR "Error: wrong email address after --email, bypassed."
-                                    fi
+        -e | --email )              check_value_follow "$2" "email address"
+                                    shift
+                                    EMAIL=$FOLLOWPARAM
                                     ;;
                                     
-             --lsphp )              shift
+             --lsphp )              check_value_follow "$2" "lsphp version"
+                                    shift
                                     cnt=${#LSPHPVERLIST[@]}
                                     for (( i = 0 ; i < cnt ; i++ ))
                                     do
@@ -905,65 +917,66 @@ while [ "$1" != "" ]; do
         -w | --wordpress )          INSTALLWORDPRESS=1
                                     ;;
                                     
-             --wordpressplus )      check_value_follow $2
-                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
-                                        shift
-                                        SITEDOMAIN=$FOLLOWPARAM
-                                        INSTALLWORDPRESS=1
-                                        INSTALLWORDPRESSPLUS=1
-                                    else
-                                        echoR "Error: wrong domain follows --wordpressplus, check usage."
-                                        usage
-                                        exit 0
-                                    fi
+             --wordpressplus )      check_value_follow "$2" "domain"
+                                    shift
+                                    SITEDOMAIN=$FOLLOWPARAM
+                                    INSTALLWORDPRESS=1
+                                    INSTALLWORDPRESSPLUS=1
                                     ;;
                                     
-             --wordpresspath )      shift
-                                    WORDPRESSPATH=$1
+             --wordpresspath )      check_value_follow "$2" "wordpress path"
+                                    shift
+                                    WORDPRESSPATH=$FOLLOWPARAM
                                     INSTALLWORDPRESS=1
                                     ;;
                                     
-        -r | --dbrootpassword )     check_value_follow $2
+        -r | --dbrootpassword )     check_value_follow "$2" ""
                                     if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
                                     ROOTPASSWORD=$FOLLOWPARAM
                                     ;;
 
-             --dbname )             shift
-                                    DATABASENAME=$1
+             --dbname )             check_value_follow "$2" "database name"
+                                    shift
+                                    DATABASENAME=$FOLLOWPARAM
                                     ;;
-             --dbuser )             shift
-                                    USERNAME=$1
+             --dbuser )             check_value_follow "$2" "database username"
+                                    shift
+                                    USERNAME=$FOLLOWPARAM
                                     ;;
-             --dbpassword )         check_value_follow $2
+             --dbpassword )         check_value_follow "$2" ""
                                     if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
                                     USERPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
-             --listenport )         shift
-                                    WPPORT=$1
+             --listenport )         check_value_follow "$2" "listen port"
+                                    shift
+                                    WPPORT=$FOLLOWPARAM
                                     ;;
 
-             --wpuser )             shift
+             --wpuser )             check_value_follow "$2" "wordpress user"
+                                    shift
                                     WPUSER=$1
                                     ;;
                                     
-             --wppassword )         check_value_follow $2
+             --wppassword )         check_value_follow "$2" ""
                                     if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
                                     WPPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
-             --wplang )             shift
-                                    WPLANGUAGE=$1
+             --wplang )             check_value_follow "$2" "wordpress language"
+                                    shift
+                                    WPLANGUAGE=$FOLLOWPARAM
                                     ;;
                                     
-             --sitetitle )          shift
-                                    WPTITLE=$1
+             --sitetitle )          check_value_follow "$2" "wordpress website title"
+                                    shift
+                                    WPTITLE=$FOLLOWPARAM
                                     ;;
 
             --uninstall )           ACTION=UNINSTALL
