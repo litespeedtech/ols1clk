@@ -28,17 +28,17 @@ ISCENTOS=
 OLSINSTALLED=
 MYSQLINSTALLED=
 
-#Generate webAdmin and mysql root password randomly
-RAND1=$RANDOM
-RAND2=$RANDOM
-RAND3=$RANDOM
-RAND4=$RANDOM
-DATE=`date`
-ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
-ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
+#Generate the passwords randomly
+RAND1=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
+RAND2=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
+RAND3=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
+RAND4=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
+
+ADMINPASSWORD=`echo $RAND1 |  md5sum | base64 | head -c 8`
+ROOTPASSWORD=`echo $RAND2 |  md5sum | base64 | head -c 8`
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
-USERPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
+USERPASSWORD=`echo $RAND3 |  md5sum | base64 | head -c 8`
 WORDPRESSPATH=$SERVER_ROOT
 
 WPPORT=80
@@ -47,7 +47,7 @@ INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
 
 WPLANGUAGE=en
-WPPASSWORD=`echo "$RAND4$DATE" |  md5sum | base64 | head -c 8`
+WPPASSWORD=`echo $RAND4 |  md5sum | base64 | head -c 8`
 WPUSER=wpuser
 WPTITLE=MySite
 
@@ -100,7 +100,7 @@ function check_root
 
 function check_wget
 {
-    which wget  > /dev/null 2>&1
+    which wget  >/dev/null 2>&1
     if [ $? != 0 ] ; then
         if [ "x$ISCENTOS" = "x1" ] ; then
             yum -y install wget
@@ -108,7 +108,7 @@ function check_wget
             apt-get -y install wget
         fi
     
-        which wget  > /dev/null 2>&1
+        which wget  >/dev/null 2>&1
         if [ $? != 0 ] ; then
             echoR "An error occured during wget installation."
             ALLERRORS=1
@@ -130,17 +130,17 @@ function check_os
     ISCENTOS=0
     
     if [ -f /etc/redhat-release ] ; then
-        cat /etc/redhat-release | grep " 5." > /dev/null
+        cat /etc/redhat-release | grep " 5." >/dev/null
         if [ $? = 0 ] ; then
             OSVER=CENTOS5
             ISCENTOS=1
         else
-            cat /etc/redhat-release | grep " 6." > /dev/null
+            cat /etc/redhat-release | grep " 6." >/dev/null
             if [ $? = 0 ] ; then
                 OSVER=CENTOS6
                 ISCENTOS=1
             else
-                cat /etc/redhat-release | grep " 7." > /dev/null
+                cat /etc/redhat-release | grep " 7." >/dev/null
                 if [ $? = 0 ] ; then
                     OSVER=CENTOS7
                     ISCENTOS=1
@@ -148,30 +148,30 @@ function check_os
             fi
         fi
     elif [ -f /etc/lsb-release ] ; then
-        cat /etc/lsb-release | grep "DISTRIB_RELEASE=12." > /dev/null
+        cat /etc/lsb-release | grep "DISTRIB_RELEASE=12." >/dev/null
         if [ $? = 0 ] ; then
             OSVER=UBUNTU12
         else
-            cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." > /dev/null
+            cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." >/dev/null
             if [ $? = 0 ] ; then
                 OSVER=UBUNTU14
             else
-                cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." > /dev/null
+                cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." >/dev/null
                 if [ $? = 0 ] ; then
                     OSVER=UBUNTU16
                 fi
             fi
         fi    
     elif [ -f /etc/debian_version ] ; then
-        cat /etc/debian_version | grep "^7." > /dev/null
+        cat /etc/debian_version | grep "^7." >/dev/null
         if [ $? = 0 ] ; then
             OSVER=DEBIAN7
         else
-            cat /etc/debian_version | grep "^8." > /dev/null
+            cat /etc/debian_version | grep "^8." >/dev/null
             if [ $? = 0 ] ; then
                 OSVER=DEBIAN8
             else
-                cat /etc/debian_version | grep "^9." > /dev/null
+                cat /etc/debian_version | grep "^9." >/dev/null
                 if [ $? = 0 ] ; then
                     OSVER=DEBIAN9
                 fi
@@ -240,7 +240,7 @@ function uninstall_ols_centos
     yum -y remove openlitespeed
     
     if [ "x$LSPHPVER" = "x56" ] ; then
-        yum list installed | grep lsphp | grep process >  /dev/null 2>&1
+        yum list installed | grep lsphp | grep process >/dev/null 2>&1
         if [ $? = 0 ] ; then
             local LSPHPSTR=`yum list installed | grep lsphp | grep process`
             LSPHPVER=`echo $LSPHPSTR | awk '{print substr($0,6,2)}'`
@@ -318,7 +318,7 @@ function uninstall_ols_debian
     apt-get -y --purge remove openlitespeed
     
     if [ "x$LSPHPVER" = "x56" ] ; then
-        dpkg -l | grep lsphp | grep mysql >  /dev/null 2>&1
+        dpkg -l | grep lsphp | grep mysql >/dev/null 2>&1
         if [ $? = 0 ] ; then
             local LSPHPSTR=`dpkg -l | grep lsphp | grep mysql`
             LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
@@ -356,7 +356,7 @@ function install_wordpress
 
     cd "$WORDPRESSPATH"
     wget --no-check-certificate http://wordpress.org/latest.tar.gz
-    tar -xzvf latest.tar.gz  >  /dev/null 2>&1
+    tar -xzvf latest.tar.gz  >/dev/null 2>&1
     rm latest.tar.gz
     
     wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wordpress/wp-content/plugins/litespeed-cache/
@@ -507,7 +507,7 @@ function setup_mysql
     #delete user if exists because I need to set the password
     mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 
     
-    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/null
+    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" >/dev/null
     if [ $? = 0 ] ; then
         echoG "user $USERNAME exists in mysql.user"
     else
@@ -620,7 +620,7 @@ function install_ols
 function config_server
 {
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
-        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" > /dev/null
+        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
             VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
@@ -721,7 +721,7 @@ function getCurStatus
         OLSINSTALLED=0
     fi
  
-    which mysqladmin  > /dev/null 2>&1
+    which mysqladmin  >/dev/null 2>&1
     if [ $? = 0 ] ; then
         MYSQLINSTALLED=1
     else
@@ -855,8 +855,8 @@ function test_page
     local PAGENAME=$3
 
     rm -rf tmp.tmp
-    wget --no-check-certificate -O tmp.tmp  $URL >  /dev/null 2>&1
-    grep "$KEYWORD" tmp.tmp  >  /dev/null 2>&1
+    wget --no-check-certificate -O tmp.tmp  $URL >/dev/null 2>&1
+    grep "$KEYWORD" tmp.tmp  >/dev/null 2>&1
     
     if [ $? != 0 ] ; then
         echoR "Error: $PAGENAME failed."
@@ -1142,8 +1142,8 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     
     if [ "x$WPPORT" = "x80" ] ; then
         echoY "Trying to stop some web servers that may be using port 80."
-        killall -9 apache2  >  /dev/null 2>&1
-        killall -9 httpd    >  /dev/null 2>&1
+        killall -9 apache2  >/dev/null 2>&1
+        killall -9 httpd    >/dev/null 2>&1
     fi
 fi
 
@@ -1158,15 +1158,15 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
         INSTALLURL=http://$SITEDOMAIN/wp-admin/install.php
     fi
 
-    wget $INSTALLURL>  /dev/null 2>&1
+    wget $INSTALLURL >/dev/null 2>&1
     sleep 5
     
     #echo "wget --post-data 'language=$WPLANGUAGE' --referer=$INSTALLURL $INSTALLURL?step=1"
-    wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1>  /dev/null 2>&1
+    wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1 >/dev/null 2>&1
     sleep 1
     
     #echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
-    wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >  /dev/null 2>&1
+    wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
 
     echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
 fi
