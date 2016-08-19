@@ -29,16 +29,17 @@ OLSINSTALLED=
 MYSQLINSTALLED=
 
 #Generate the passwords randomly
-RAND1=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
-RAND2=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
-RAND3=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
-RAND4=`dd if=/dev/urandom bs=8 count=1`$RANDOM`date`
 
-ADMINPASSWORD=`echo $RAND1 |  md5sum | base64 | head -c 8`
-ROOTPASSWORD=`echo $RAND2 |  md5sum | base64 | head -c 8`
+RAND1=$RANDOM
+RAND2=$RANDOM
+RAND3=$RANDOM
+RAND4=$RANDOM
+DATE=`date`
+ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
+ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
-USERPASSWORD=`echo $RAND3 |  md5sum | base64 | head -c 8`
+USERPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
 WORDPRESSPATH=$SERVER_ROOT
 
 WPPORT=80
@@ -47,7 +48,7 @@ INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
 
 WPLANGUAGE=en
-WPPASSWORD=`echo $RAND4 |  md5sum | base64 | head -c 8`
+WPPASSWORD=`echo "$RAND4$DATE" |  md5sum | base64 | head -c 8`
 WPUSER=wpuser
 WPTITLE=MySite
 
