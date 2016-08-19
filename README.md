@@ -22,7 +22,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 * **--wordpress(-w):** to install and setup wordpress. You will still need to access the /wp-admin/wp-config.php file to finish your wordpress installation.
 * **--wordpressplus SITEDOMAIN:** to install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup. 
 * **--wordpresspath WORDPRESSPATH:** to specify a location for the new wordpress installation or use an existing wordpress installation.
-* **dbrootpassword(-r) [PASSWORD]:** to set the mysql server root password instead of using a random one.
+* **--dbrootpassword(-r) [PASSWORD]:** to set the mysql server root password instead of using a random one.
   * If you omit **[PASSWORD]**, ols1clk will prompt you to provide this password during installation.
 * **--dbname DATABASENAME:** to set the database name to be used by wordpress.
 * **--dbuser DBUSERNAME:** to set the username of wordpress in mysql.
