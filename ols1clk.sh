@@ -19,36 +19,46 @@
 
 ###    Author: dxu@litespeedtech.com (David Shue)
 
-OSVER=UNKNOWN
+TEMPRANDSTR=
+function getRandPassword
+{
+    dd if=/dev/urandom bs=8 count=1 of=/tmp/randpasswdtmpfile >/dev/null 2>&1
+    TEMPRANDSTR=`cat /tmp/randpasswdtmpfile`
+    rm /tmp/randpasswdtmpfile
+    local DATE=`date`
+    TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
+}
+
+OSNAMEVER=UNKNOWN
+OSNAME=
+OSVER=
 OSTYPE=`uname -m`
+MARIADBCPUARCH=
+
 SERVER_ROOT=/usr/local/lsws
-ISCENTOS=
 
 #Current status
 OLSINSTALLED=
 MYSQLINSTALLED=
 
-#Generate the passwords randomly
 
-RAND1=$RANDOM
-RAND2=$RANDOM
-RAND3=$RANDOM
-RAND4=$RANDOM
-DATE=`date`
-ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
-ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
+getRandPassword
+ADMINPASSWORD=$TEMPRANDSTR
+getRandPassword
+ROOTPASSWORD=$TEMPRANDSTR
+getRandPassword
+USERPASSWORD=$TEMPRANDSTR
+getRandPassword
+WPPASSWORD=$TEMPRANDSTR
+
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
-USERPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
+
 WORDPRESSPATH=$SERVER_ROOT
-
 WPPORT=80
-
 INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
-
 WPLANGUAGE=en
-WPPASSWORD=`echo "$RAND4$DATE" |  md5sum | base64 | head -c 8`
 WPUSER=wpuser
 WPTITLE=MySite
 
@@ -68,21 +78,21 @@ TEMPPASSWORD=
 ACTION=INSTALL
 FOLLOWPARAM=
 
-echoY()
+function echoY
 {
     FLAG=$1
     shift
     echo -e "\033[38;5;148m$FLAG\033[39m$@"
 }
 
-echoG()
+function echoG
 {
     FLAG=$1
     shift
     echo -e "\033[38;5;71m$FLAG\033[39m$@"
 }
 
-echoR()
+function echoR
 {
     FLAG=$1
     shift
@@ -103,7 +113,7 @@ function check_wget
 {
     which wget  >/dev/null 2>&1
     if [ $? != 0 ] ; then
-        if [ "x$ISCENTOS" = "x1" ] ; then
+        if [ "x$OSNAME" = "xcentos" ] ; then
             yum -y install wget
         else
             apt-get -y install wget
@@ -127,76 +137,103 @@ function display_license
 
 function check_os
 {
+    OSNAMEVER=
+    OSNAME=
     OSVER=
-    ISCENTOS=0
+    MARIADBCPUARCH=
     
     if [ -f /etc/redhat-release ] ; then
         cat /etc/redhat-release | grep " 5." >/dev/null
         if [ $? = 0 ] ; then
-            OSVER=CENTOS5
-            ISCENTOS=1
+            OSNAMEVER=CENTOS5
+            OSNAME=centos
+            OSVER=5
         else
             cat /etc/redhat-release | grep " 6." >/dev/null
             if [ $? = 0 ] ; then
-                OSVER=CENTOS6
-                ISCENTOS=1
+                OSNAMEVER=CENTOS6
+                OSNAME=centos
+                OSVER=6
             else
                 cat /etc/redhat-release | grep " 7." >/dev/null
                 if [ $? = 0 ] ; then
-                    OSVER=CENTOS7
-                    ISCENTOS=1
+                    OSNAMEVER=CENTOS7
+                    OSNAME=centos
+                    OSVER=7
+
                 fi
             fi
         fi
     elif [ -f /etc/lsb-release ] ; then
         cat /etc/lsb-release | grep "DISTRIB_RELEASE=12." >/dev/null
         if [ $? = 0 ] ; then
-            OSVER=UBUNTU12
+            OSNAMEVER=UBUNTU12
+            OSNAME=ubuntu
+            OSVER=precise
+            MARIADBCPUARCH="arch=amd64,i386"
+            
         else
             cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." >/dev/null
             if [ $? = 0 ] ; then
-                OSVER=UBUNTU14
+                OSNAMEVER=UBUNTU14
+                OSNAME=ubuntu
+                OSVER=trusty
+                MARIADBCPUARCH="arch=amd64,i386,ppc64el"
             else
                 cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." >/dev/null
                 if [ $? = 0 ] ; then
-                    OSVER=UBUNTU16
+                    OSNAMEVER=UBUNTU16
+                    OSNAME=ubuntu
+                    OSVER=xenial
+                    MARIADBCPUARCH="arch=amd64,i386,ppc64el"
                 fi
             fi
         fi    
     elif [ -f /etc/debian_version ] ; then
         cat /etc/debian_version | grep "^7." >/dev/null
         if [ $? = 0 ] ; then
-            OSVER=DEBIAN7
+            OSNAMEVER=DEBIAN7
+            OSNAME=debian
+            OSVER=wheezy
+            MARIADBCPUARCH="arch=amd64,i386"
         else
             cat /etc/debian_version | grep "^8." >/dev/null
             if [ $? = 0 ] ; then
-                OSVER=DEBIAN8
+                OSNAMEVER=DEBIAN8
+                OSNAME=debian
+                OSVER=jessie
+                MARIADBCPUARCH="arch=amd64,i386"
             else
                 cat /etc/debian_version | grep "^9." >/dev/null
                 if [ $? = 0 ] ; then
-                    OSVER=DEBIAN9
+                    OSNAMEVER=DEBIAN9
+                    OSNAME=debian
+                    OSVER=stretch
+                    MARIADBCPUARCH="arch=amd64,i386"
                 fi
             fi
         fi
     fi
 
-    if [ "x$OSVER" = "x" ] ; then
+    if [ "x$OSNAMEVER" = "x" ] ; then
         echoR "Sorry, currently one click installation only supports Centos(5-7), Debian(7-9) and Ubuntu(12,14,16)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         echo 
         exit 1
     else
-        echoG "Current platform is  "  $OSVER.
-        export OSVER=$OSVER
-        export ISCENTOS=$ISCENTOS
+        if [ "x$OSNAME" = "xcentos" ] ; then
+            echoG "Current platform is "  "$OSNAME $OSVER."
+        else
+            echoG "Current platform is "  "$OSNAMEVER $OSNAME $OSVER."
+        fi
     fi
 }
 
 
 function update_centos_hashlib
 {
-    if [ "x$ISCENTOS" = "x1" ] ; then
+    if [ "x$OSNAME" = "xcentos" ] ; then
         yum -y install python-hashlib
     fi
 }
@@ -208,24 +245,15 @@ function install_ols_centos
         action=reinstall
     fi
     
-    local VERSION=
     local ND=
-    if [ "x$OSVER" = "xCENTOS5" ] ; then
-        VERSION=5
-    elif [ "x$OSVER" = "xCENTOS6" ] ; then
-        VERSION=6
-    else #if [ "x$OSVER" = "xCENTOS7" ] ; then
-        VERSION=7
-    fi
-
     if [ "x$LSPHPVER" = "x70" ] ; then
         ND=nd
-        if [ "x$OSVER" = "xCENTOS5" ] ; then
+        if [ "x$OSVER" = "x5" ] ; then
             rpm -ivh http://repo.mysql.com/mysql-community-release-el5.rpm
         fi
     fi
     
-    rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
+    rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
     yum -y $action openlitespeed
     yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     if [ $? != 0 ] ; then
@@ -240,33 +268,30 @@ function uninstall_ols_centos
 {
     yum -y remove openlitespeed
     
-    if [ "x$LSPHPVER" = "x56" ] ; then
-        yum list installed | grep lsphp | grep process >/dev/null 2>&1
-        if [ $? = 0 ] ; then
-            local LSPHPSTR=`yum list installed | grep lsphp | grep process`
-            LSPHPVER=`echo $LSPHPSTR | awk '{print substr($0,6,2)}'`
-            echoY "The installed version of lsphp is $LSPHPVER"
-        else
-            echoR "Uninstallation cannot get the version of the currently installed lsphp."
-            echoR "Can not uninstall lsphp correctly."
-            LSPHPVER=
+    #Need to find what is current lsphp version
+    yum list installed | grep lsphp | grep process >/dev/null 2>&1
+    if [ $? = 0 ] ; then
+        local LSPHPSTR=`yum list installed | grep lsphp | grep process`
+        LSPHPVER=`echo $LSPHPSTR | awk '{print substr($0,6,2)}'`
+        echoY "The installed version of lsphp is $LSPHPVER"
+        
+        local ND=
+        if [ "x$LSPHPVER" = "x70" ] ; then
+            ND=nd
         fi
-
-    fi
-
-    local ND=
-    if [ "x$LSPHPVER" = "x70" ] ; then
-        ND=nd
-    fi
-    
-    if [ "x$LSPHPVER" != "x" ] ; then
+        
         yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
         if [ $? != 0 ] ; then
             echoR "An error occured while uninstalling openlitespeed."
             ALLERRORS=1
         fi
+        
+    else
+        echoR "Uninstallation cannot get the version of the currently installed lsphp."
+        echoR "Can not uninstall lsphp correctly."
+        LSPHPVER=
     fi
-    
+
     rm -rf $SERVER_ROOT/
 }
 
@@ -277,23 +302,7 @@ function install_ols_debian
         action=reinstall
     fi
     
-    local NAME=
-    if [ "x$OSVER" = "xDEBIAN7" ] ; then
-        NAME=wheezy
-    elif [ "x$OSVER" = "xDEBIAN8" ] ; then
-        NAME=jessie
-    elif [ "x$OSVER" = "xDEBIAN9" ] ; then
-        NAME=stretch
-        
-    elif [ "x$OSVER" = "xUBUNTU12" ] ; then
-        NAME=precise
-    elif [ "x$OSVER" = "xUBUNTU14" ] ; then
-        NAME=trusty
-    elif [ "x$OSVER" = "xUBUNTU16" ] ; then
-        NAME=xenial
-    fi
-
-    echo "deb http://rpms.litespeedtech.com/debian/ $NAME main"  > /etc/apt/sources.list.d/lst_debian_repo.list
+    echo "deb http://rpms.litespeedtech.com/debian/ $OSVER main"  > /etc/apt/sources.list.d/lst_debian_repo.list
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
     apt-get -y update
     apt-get -y install openlitespeed
@@ -318,20 +327,12 @@ function uninstall_ols_debian
 {
     apt-get -y --purge remove openlitespeed
     
-    if [ "x$LSPHPVER" = "x56" ] ; then
-        dpkg -l | grep lsphp | grep mysql >/dev/null 2>&1
-        if [ $? = 0 ] ; then
-            local LSPHPSTR=`dpkg -l | grep lsphp | grep mysql`
-            LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
-            echoY "The installed version of lsphp is $LSPHPVER"
-        else
-            echoR "Uninstallation cannot get the version of the currently installed lsphp."
-            echoR "Can not uninstall lsphp correctly."
-            LSPHPVER=
-        fi
-    fi
-
-    if [ "x$LSPHPVER" != "x" ] ; then
+    dpkg -l | grep lsphp | grep mysql >/dev/null 2>&1
+    if [ $? = 0 ] ; then
+        local LSPHPSTR=`dpkg -l | grep lsphp | grep mysql`
+        LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
+        echoY "The installed version of lsphp is $LSPHPVER"
+        
         apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap
         
         if [ "x$LSPHPVER" != "x70" ] ; then
@@ -341,9 +342,13 @@ function uninstall_ols_debian
         fi
         
         if [ $? != 0 ] ; then
-            echoR "An error occured while uninstalling openlitespeed."
+            echoR "An error occured while uninstalling openlitespeed/lsphp."
             ALLERRORS=1
         fi
+    else
+        echoR "Uninstallation cannot get the version of the currently installed lsphp."
+        echoR "Can not uninstall lsphp correctly."
+        LSPHPVER=
     fi
 
     rm -rf $SERVER_ROOT/
@@ -391,71 +396,126 @@ function test_mysql_password
     CURROOTPASSWORD=$ROOTPASSWORD
     TESTPASSWORDERROR=0
     
-    #test it is the current password
     mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
     if [ $? != 0 ] ; then
-        printf '\033[31mPlease input the current root password:\033[0m'
-        read answer
-        mysqladmin -uroot -p$answer password $answer
-        if [ $? = 0 ] ; then
-            CURROOTPASSWORD=$answer
-        else
-            echoR "root password is incorrect. 2 attempts remaining."
+        #Sometimes, mysql will treat the password error and restart will fix it.
+        service mysql restart
+        if [ $? != 0 ] && [ "x$OSNAME" = "xcentos" ] ; then
+            service mysqld restart
+        fi
+    
+        mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
+        if [ $? != 0 ] ; then
             printf '\033[31mPlease input the current root password:\033[0m'
             read answer
-            mysqladmin -u root -p$answer password $answer
+            mysqladmin -uroot -p$answer password $answer
             if [ $? = 0 ] ; then
                 CURROOTPASSWORD=$answer
             else
-                echoR "root password is incorrect. 1 attempt remaining."
+                echoR "root password is incorrect. 2 attempts remaining."
                 printf '\033[31mPlease input the current root password:\033[0m'
                 read answer
-                mysqladmin -u root -p$answer password $answer
+                mysqladmin -uroot -p$answer password $answer
                 if [ $? = 0 ] ; then
                     CURROOTPASSWORD=$answer
                 else
-                    echoR "root password is incorrect. 0 attempts remaining."
-                    echo
-                    TESTPASSWORDERROR=1
+                    echoR "root password is incorrect. 1 attempt remaining."
+                    printf '\033[31mPlease input the current root password:\033[0m'
+                    read answer
+                    mysqladmin -uroot -p$answer password $answer
+                    if [ $? = 0 ] ; then
+                        CURROOTPASSWORD=$answer
+                    else
+                        echoR "root password is incorrect. 0 attempts remaining."
+                        echo
+                        TESTPASSWORDERROR=1
+                    fi
                 fi
             fi
         fi
     fi
 
-    export CURROOTPASSWORD=$CURROOTPASSWORD
     export TESTPASSWORDERROR=$TESTPASSWORDERROR
+    if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
+        export CURROOTPASSWORD=
+    else
+        export CURROOTPASSWORD=$CURROOTPASSWORD
+    fi
 }
 
 function install_mysql
 {
-    if [ "x$ISCENTOS" = "x1" ] ; then
-        yum -y install mysql-server
+    if [ "x$OSNAME" = "xcentos" ] ; then
+
+        #Add mariadb repo here if not exist
+        local REPOFILE=/etc/yum.repos.d/MariaDB.repo
+        if [ ! -f $REPOFILE ] ; then 
+            local CENTOSVER=
+            if [ "x$OSTYPE" != "xx86_64" ] ; then
+                CENTOSVER=centos$OSVER-x86
+            else
+                CENTOSVER=centos$OSVER-amd64
+            fi
+        
+            cat >> $REPOFILE <<END 
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.1/$CENTOSVER
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+
+END
+        fi
+    
+        yum -y install MariaDB-server MariaDB-client
         if [ $? != 0 ] ; then
-            echoR "An error occured during installation of Mysql-server. Please fix this error and try again."
-            echoR "You may want to manually run the command 'yum -y install mysql-server' to check. Aborting installation!"
+            echoR "An error occured during installation of MariaDB. Please fix this error and try again."
+            echoR "You may want to manually run the command 'yum -y install MariaDB-server MariaDB-client' to check. Aborting installation!"
             exit 1
         fi
-        service mysqld start
     else
-        apt-get -y -f --force-yes install mysql-server
+
+        if [ "x$OSNAMEVER" = "xDEBIAN7" ] ; then
+            apt-get install python-software-properties
+            apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
+        elif [ "x$OSNAMEVER" = "xDEBIAN8" ] ; then
+            apt-get install software-properties-common
+            apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
+        elif [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
+            apt-get install software-properties-common
+            apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
+            
+        elif [ "x$OSNAMEVER" = "xUBUNTU12" ] ; then
+            apt-get install python-software-properties
+            apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
+        elif [ "x$OSNAMEVER" = "xUBUNTU14" ] ; then
+            apt-get install software-properties-common
+            apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
+        elif [ "x$OSNAMEVER" = "xUBUNTU16" ] ; then
+            apt-get install software-properties-common
+            apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
+        fi
+        echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/10.1/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
+    
+        apt-get -y -f --force-yes install mariadb-server
         if [ $? != 0 ] ; then
-            echoR "An error occured during installation of Mysql-server. Please fix this error and try again."
-            echoR "You may want to manually run the command 'apt-get -y -f --force-yes install mysql-server' to check. Aborting installation!"
+            echoR "An error occured during installation of MariaDB. Please fix this error and try again."
+            echoR "You may want to manually run the command 'apt-get -y -f --force-yes install mariadb-server' to check. Aborting installation!"
             exit 1
         fi
-        #mysqld start
-        service mysql start
+        
     fi
+    service mysql start
     
     if [ $? != 0 ] ; then
-        echoR "An error occured when starting the Mysql-server service. "
+        echoR "An error occured when starting the MariaDB service. "
         echoR "Please fix this error and try again. Aborting installation!"
         exit 1
     fi
     
     #mysql_secure_installation
     #mysql_install_db
-    mysqladmin -u root password $ROOTPASSWORD
+    mysqladmin -uroot password $ROOTPASSWORD
     if [ $? = 0 ] ; then
         echoG "Mysql root password set to $ROOTPASSWORD"
     else
@@ -488,7 +548,7 @@ function install_mysql
                     echoG "OK, mysql root password not changed." 
                     ROOTPASSWORD=$CURROOTPASSWORD
                 else
-                    mysqladmin -u root -p$CURROOTPASSWORD password $ROOTPASSWORD
+                    mysqladmin -uroot -p$CURROOTPASSWORD password $ROOTPASSWORD
                     if [ $? = 0 ] ; then
                         echoG "OK, mysql root password changed to $ROOTPASSWORD."
                     else
@@ -546,11 +606,11 @@ function setup_mysql
 function resetmysqlroot
 {
     MYSQLNAME=mysql
-    if [ "x$ISCENTOS" = "x1" ] ; then
-        MYSQLNAME=mysqld
-    fi
-    
     service $MYSQLNAME stop
+    if [ $? != 0 ] && [ "x$OSNAME" = "xcentos" ] ; then
+        MYSQLNAME=mysqld
+        service $MYSQLNAME stop
+    fi
     
     DEFAULTPASSWD=$1
     
@@ -609,7 +669,7 @@ function install_ols
         STATUS=Update
     fi
 
-    if [ "x$ISCENTOS" = "x1" ] ; then
+    if [ "x$OSNAME" = "xcentos" ] ; then
         echo "$STATUS on Centos"
         install_ols_centos $STATUS
     else
@@ -714,6 +774,22 @@ END
 }
 
 
+function activate_cache
+{
+    cat > $WORDPRESSPATH/wordpress/activate_cache.php <<END 
+<?php
+include '$WORDPRESSPATH/wordpress/wp-load.php';
+include_once '$WORDPRESSPATH/wordpress/wp-admin/includes/plugin.php';
+include_once '$WORDPRESSPATH/wordpress/wp-admin/includes/file.php';
+define('WP_ADMIN', true);
+activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
+
+END
+    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/wordpress/activate_cache.php
+    rm $WORDPRESSPATH/wordpress/activate_cache.php
+}
+
+
 function getCurStatus
 {
     if [ -e $SERVER_ROOT/bin/openlitespeed ] ; then
@@ -744,7 +820,7 @@ function uninstall
     if [ "x$OLSINSTALLED" = "x1" ] ; then
         echoY "Uninstalling ..."
         $SERVER_ROOT/bin/lswsctrl stop
-        if [ "x$ISCENTOS" = "x1" ] ; then
+        if [ "x$OSNAME" = "xcentos" ] ; then
             echo "Uninstall on Centos"
             uninstall_ols_centos
         else
@@ -814,10 +890,11 @@ function usage
     echoG "                                   " "file to finish your wordpress installation."
     echoG " --wordpressplus SITEDOMAIN        " "To install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup."
     echoG " --wordpresspath WORDPRESSPATH     " "To specify a location for the new wordpress installation or use an existing wordpress installation."
-    echoG " --dbrootpassword(-r) [PASSWORD]   " "To set the mysql server root password instead of using a random one."
+    
+    echoG " --dbrootpassword(-r) [PASSWORD]   " "To set the database root password instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --dbname DATABASENAME             " "To set the database name to be used by wordpress."
-    echoG " --dbuser DBUSERNAME               " "To set the username of wordpress in mysql."
+    echoG " --dbuser DBUSERNAME               " "To set the username of wordpress in database."
     echoG " --dbpassword [PASSWORD]           " "To set the password of the table used by wordpress in mysql instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --listenport WORDPRESSPORT        " "To set the wordpress listener port, default is 80."
@@ -930,7 +1007,7 @@ while [ "$1" != "" ]; do
                                     WORDPRESSPATH=$FOLLOWPARAM
                                     INSTALLWORDPRESS=1
                                     ;;
-                                    
+
         -r | --dbrootpassword )     check_value_follow "$2" ""
                                     if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
@@ -1030,7 +1107,7 @@ if [ "x$ACTION" = "xPURGEALL" ] ; then
 fi
 
 
-if [ "x$OSVER" = "xCENTOS5" ] ; then
+if [ "x$OSNAMEVER" = "xCENTOS5" ] ; then
    if [ "x$LSPHPVER" = "x70" ] ; then
        echoY "We do not support lsphp7 on Centos 5, will use lsphp56."
        LSPHPVER=56
@@ -1148,7 +1225,7 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     fi
 fi
 
-$SERVER_ROOT/bin/lswsctrl stop
+$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
 $SERVER_ROOT/bin/lswsctrl start
 
 
@@ -1169,6 +1246,8 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
     #echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
     wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
 
+    activate_cache
+    
     echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
 fi
 
@@ -1177,17 +1256,14 @@ echoY "Please be aware that your password was written to file '$SERVER_ROOT/pass
 
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoG "Congratulations! Installation finished."
-    if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-        echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
-        echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
-    fi
 else
     echoY "Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
-    if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-        echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
-        echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
-    fi
 fi  
+
+if [ "x$INSTALLWORDPRESSPLUS" = "x0" ] && [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+    echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
+    echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
+fi
 
 echo
 echoY "Testing ..."
