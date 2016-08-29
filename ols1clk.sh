@@ -130,7 +130,7 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 1.4                      *'
+    echoY '*                    Open LiteSpeed One click installation, Version 1.5                      *'
     echoY '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoY '**********************************************************************************************'
 }
