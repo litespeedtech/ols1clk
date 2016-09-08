@@ -54,10 +54,11 @@ WPPASSWORD=$TEMPRANDSTR
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
 
-WORDPRESSPATH=$SERVER_ROOT
+WORDPRESSPATH=$SERVER_ROOT/wordpress
 WPPORT=80
 INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
+FORCEYES=0
 WPLANGUAGE=en
 WPUSER=wpuser
 WPTITLE=MySite
@@ -357,35 +358,44 @@ function uninstall_ols_debian
 function install_wordpress
 {
     if [ ! -e "$WORDPRESSPATH" ] ; then 
-        mkdir -p "$WORDPRESSPATH"
+        local WPDIRNAME=`dirname $WORDPRESSPATH`
+        local WPBASENAME=`basename $WORDPRESSPATH`
+        mkdir -p "$WPDIRNAME"
+    
+        cd "$WPDIRNAME"
+        
+        wget --no-check-certificate http://wordpress.org/latest.tar.gz
+        tar -xzvf latest.tar.gz  >/dev/null 2>&1
+        rm latest.tar.gz
+        if [ "x$WPBASENAME" != "xwordpress" ] ; then
+            mv wordpress/ $WPBASENAME/
+        fi
+        
+        
+        wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
+        chown -R --reference=$SERVER_ROOT/autoupdate  $WORDPRESSPATH
+        
+        cd -
+    else
+        echoY "$WORDPRESSPATH exists, will use it."
     fi
-
-    cd "$WORDPRESSPATH"
-    wget --no-check-certificate http://wordpress.org/latest.tar.gz
-    tar -xzvf latest.tar.gz  >/dev/null 2>&1
-    rm latest.tar.gz
-    
-    wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wordpress/wp-content/plugins/litespeed-cache/
-    chown -R --reference=autoupdate  $WORDPRESSPATH/wordpress
-    
-    cd -
 }
 
 
 
 function setup_wordpress
 {
-    if [ -e "$WORDPRESSPATH/wordpress/wp-config-sample.php" ] ; then
-        sed -e "s/database_name_here/$DATABASENAME/" -e "s/username_here/$USERNAME/" -e "s/password_here/$USERPASSWORD/" "$WORDPRESSPATH/wordpress/wp-config-sample.php" > "$WORDPRESSPATH/wordpress/wp-config.php"
-        if [ -e "$WORDPRESSPATH/wordpress/wp-config.php" ] ; then
-            chown  -R --reference="$WORDPRESSPATH/wordpress/wp-config-sample.php"   "$WORDPRESSPATH/wordpress/wp-config.php"
+    if [ -e "$WORDPRESSPATH/wp-config-sample.php" ] ; then
+        sed -e "s/database_name_here/$DATABASENAME/" -e "s/username_here/$USERNAME/" -e "s/password_here/$USERPASSWORD/" "$WORDPRESSPATH/wp-config-sample.php" > "$WORDPRESSPATH/wp-config.php"
+        if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
+            chown  -R --reference="$WORDPRESSPATH/wp-config-sample.php"   "$WORDPRESSPATH/wp-config.php"
             echoG "Finished setting up WordPress."
         else
-            echoR "WordPress setup failed. You may not have sufficient privileges to access $WORDPRESSPATH/wordpress/wp-config.php."
+            echoR "WordPress setup failed. You may not have sufficient privileges to access $WORDPRESSPATH/wp-config.php."
             ALLERRORS=1
         fi
     else
-        echoR "WordPress setup failed. File $WORDPRESSPATH/wordpress/wp-config-sample.php does not exist."
+        echoR "WordPress setup failed. File $WORDPRESSPATH/wp-config-sample.php does not exist."
         ALLERRORS=1
     fi
 }
@@ -515,12 +525,14 @@ END
     
     #mysql_secure_installation
     #mysql_install_db
-    mysqladmin -u root password $ROOTPASSWORD
+    
+    mysql -uroot -e "use mysql; update user set plugin='' where user='root'; flush privileges;" 
+    mysqladmin -uroot password $ROOTPASSWORD
     if [ $? = 0 ] ; then
         echoG "Mysql root password set to $ROOTPASSWORD"
     else
         #test it is the current password
-        mysqladmin -u root -p $ROOTPASSWORD password $ROOTPASSWORD
+        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
         if [ $? = 0 ] ; then
             echoG "Mysql root password is $ROOTPASSWORD"
         else
@@ -548,7 +560,7 @@ END
                     echoG "OK, mysql root password not changed." 
                     ROOTPASSWORD=$CURROOTPASSWORD
                 else
-                    mysqladmin -u root -p $CURROOTPASSWORD password $ROOTPASSWORD
+                    mysqladmin -uroot -p$CURROOTPASSWORD password $ROOTPASSWORD
                     if [ $? = 0 ] ; then
                         echoG "OK, mysql root password changed to $ROOTPASSWORD."
                     else
@@ -689,7 +701,7 @@ function config_server
             cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
 virtualhost wordpress {
-vhRoot                  $WORDPRESSPATH/wordpress/
+vhRoot                  $WORDPRESSPATH
 configFile              $VHOSTCONF
 allowSymbolLink         1
 enableScript            1
@@ -744,7 +756,7 @@ context / {
     enable                1
     inherit               1
     rules                 <<<END_rules
-    rewriteFile           $WORDPRESSPATH/wordpress/.htaccess
+    rewriteFile           $WORDPRESSPATH/.htaccess
 
 END_rules
 
@@ -752,7 +764,7 @@ END_rules
 }
 
 END
-            chown -R lsadm:lsadm $WORDPRESSPATH/conf/
+            chown -R lsadm:lsadm $SERVER_ROOT/conf/
         fi
         
         #setup password
@@ -776,17 +788,17 @@ END
 
 function activate_cache
 {
-    cat > $WORDPRESSPATH/wordpress/activate_cache.php <<END 
+    cat > $WORDPRESSPATH/activate_cache.php <<END 
 <?php
-include '$WORDPRESSPATH/wordpress/wp-load.php';
-include_once '$WORDPRESSPATH/wordpress/wp-admin/includes/plugin.php';
-include_once '$WORDPRESSPATH/wordpress/wp-admin/includes/file.php';
+include '$WORDPRESSPATH/wp-load.php';
+include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
+include_once '$WORDPRESSPATH/wp-admin/includes/file.php';
 define('WP_ADMIN', true);
 activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
 
 END
-    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/wordpress/activate_cache.php
-    rm $WORDPRESSPATH/wordpress/activate_cache.php
+    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
+    rm $WORDPRESSPATH/activate_cache.php
 }
 
 
@@ -907,6 +919,8 @@ function usage
     
     echoG " --uninstall                       " "To uninstall OpenLiteSpeed and remove installation directory."
     echoG " --purgeall                        " "To uninstall OpenLiteSpeed, remove installation directory, and purge all data in mysql."
+    echoG " --quiet                           " "Set to --quiet mode, won't prompt to input anything."
+
     echoG " --version(-v)                     " "To display version information."
     echoG " --help(-h)                        " "To display usage."
     echo
@@ -914,16 +928,18 @@ function usage
 
 function uninstall_warn
 {
-    echo
-    printf "\033[31mAre you sure you want to uninstall? Type 'Y' to continue, otherwise will quit.[y/N]\033[0m "
-    read answer
-    echo
-    
-    if [ "x$answer" != "xY" ] ; then
-        echoG "Uninstallation aborted!" 
-        exit 0
+    if [ "x$FORCEYES" != "x1" ] ; then
+        echo
+        printf "\033[31mAre you sure you want to uninstall? Type 'Y' to continue, otherwise will quit.[y/N]\033[0m "
+        read answer
+        echo
+        
+        if [ "x$answer" != "xY" ] ; then
+            echoG "Uninstallation aborted!" 
+            exit 0
+        fi
+        echo
     fi
-    echo 
 }
 
 function test_page
@@ -1063,6 +1079,9 @@ while [ "$1" != "" ]; do
             --purgeall )            ACTION=PURGEALL
                                     ;;
                                     
+            --quiet )               FORCEYES=1
+                                    ;;
+
         -v | --version )            exit 0
                                     ;;                                    
                                     
@@ -1167,7 +1186,7 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     fi
     
     
-    if [ -e "$WORDPRESSPATH/wordpress/wp-config.php" ] ; then
+    if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
         echoY "WordPress location:       " "$WORDPRESSPATH (Exsiting)"
         WORDPRESSINSTALLED=1
     else
@@ -1177,15 +1196,18 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
 fi
 
 echo
-printf '\033[31mAre these settings correct? Type n to quit, otherwise will continue.[Y/n]\033[0m '
-read answer
-echo
 
-if [ "x$answer" = "xN" ] || [ "x$answer" = "xn" ] ; then
-    echoG "Aborting installation!" 
-    exit 0
+if [ "x$FORCEYES" != "x1" ] ; then
+    printf '\033[31mAre these settings correct? Type n to quit, otherwise will continue.[Y/n]\033[0m '
+    read answer
+    echo
+
+    if [ "x$answer" = "xN" ] || [ "x$answer" = "xn" ] ; then
+        echoG "Aborting installation!" 
+        exit 0
+    fi
+    echo 
 fi
-echo 
 
 
 ####begin here#####
