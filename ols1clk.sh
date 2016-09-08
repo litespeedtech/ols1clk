@@ -515,12 +515,12 @@ END
     
     #mysql_secure_installation
     #mysql_install_db
-    mysqladmin -uroot password $ROOTPASSWORD
+    mysqladmin -u root password $ROOTPASSWORD
     if [ $? = 0 ] ; then
         echoG "Mysql root password set to $ROOTPASSWORD"
     else
         #test it is the current password
-        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
+        mysqladmin -u root -p $ROOTPASSWORD password $ROOTPASSWORD
         if [ $? = 0 ] ; then
             echoG "Mysql root password is $ROOTPASSWORD"
         else
@@ -548,7 +548,7 @@ END
                     echoG "OK, mysql root password not changed." 
                     ROOTPASSWORD=$CURROOTPASSWORD
                 else
-                    mysqladmin -uroot -p$CURROOTPASSWORD password $ROOTPASSWORD
+                    mysqladmin -u root -p $CURROOTPASSWORD password $ROOTPASSWORD
                     if [ $? = 0 ] ; then
                         echoG "OK, mysql root password changed to $ROOTPASSWORD."
                     else
