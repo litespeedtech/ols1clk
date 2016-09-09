@@ -526,15 +526,20 @@ END
     #mysql_secure_installation
     #mysql_install_db
     
-    mysql -uroot -e "use mysql; update user set plugin='' where user='root'; flush privileges;" 
+    mysql -uroot -e "update mysql.user set plugin='' where user='root';"
+    mysql -uroot -e "flush privileges;" 
+    #service mysql restart
+    
     mysqladmin -uroot password $ROOTPASSWORD
     if [ $? = 0 ] ; then
         echoG "Mysql root password set to $ROOTPASSWORD"
+        CURROOTPASSWORD=$ROOTPASSWORD
     else
         #test it is the current password
         mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
         if [ $? = 0 ] ; then
             echoG "Mysql root password is $ROOTPASSWORD"
+            CURROOTPASSWORD=$ROOTPASSWORD
         else
             echoR "Failed to set Mysql root password to $ROOTPASSWORD, it may already have a root password."
             printf '\033[31mInstallation must know the password for the next step.\033[0m'
