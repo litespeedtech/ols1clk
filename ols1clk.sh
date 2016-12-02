@@ -131,7 +131,7 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 1.5                      *'
+    echoY '*                    Open LiteSpeed One click installation, Version 1.6                      *'
     echoY '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
     echoY '**********************************************************************************************'
 }
@@ -240,10 +240,13 @@ function update_centos_hashlib
     fi
 }
 
+
 function install_ols_centos
 {
     local action=install
     if [ "x$1" = "xUpdate" ] ; then
+        action=update
+    elif [ "x$1" = "xReinstall" ] ; then
         action=reinstall
     fi
     
@@ -251,14 +254,26 @@ function install_ols_centos
     if [ "x$LSPHPVER" = "x70" ] ; then
         ND=nd
         if [ "x$OSVER" = "x5" ] ; then
-            rpm -ivh http://repo.mysql.com/mysql-community-release-el5.rpm
+            rpm -Uvh http://repo.mysql.com/mysql-community-release-el5.rpm
         fi
     fi
     
     yum -y $action epel-release
-    rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
+    rpm -Uvh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
     yum -y $action openlitespeed
+    
+    if [ ! -e $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp ] ; then
+        action=install
+    fi
+    
+    #special case for lsphp56
+    if [ "x$action" = "xreinstall" ] && [ "x$LSPHPVER" = "x56" ] ; then
+        yum -y remove lsphp56-mysql
+        yum -y install lsphp56-mysql
+    fi
+    
     yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
+    
     if [ $? != 0 ] ; then
         echoR "An error occured during openlitespeed installation."
         ALLERRORS=1
@@ -270,6 +285,10 @@ function install_ols_centos
 function uninstall_ols_centos
 {
     yum -y remove openlitespeed
+    if [ $? != 0 ] ; then
+        echoR "An error occured while uninstalling openlitespeed."
+        ALLERRORS=1
+    fi
     
     #Need to find what is current lsphp version
     yum list installed | grep lsphp | grep process >/dev/null 2>&1
@@ -283,15 +302,16 @@ function uninstall_ols_centos
             ND=nd
         fi
         
-        yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
+        yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap lsphp*
         if [ $? != 0 ] ; then
-            echoR "An error occured while uninstalling openlitespeed."
+            echoR "An error occured while uninstalling lsphp$LSPHPVER"
             ALLERRORS=1
         fi
         
     else
+        yum -y remove lsphp*
         echoR "Uninstallation cannot get the version of the currently installed lsphp."
-        echoR "Can not uninstall lsphp correctly."
+        echoY "May not uninstall lsphp correctly."
         LSPHPVER=
     fi
 
@@ -300,21 +320,34 @@ function uninstall_ols_centos
 
 function install_ols_debian
 {
-    local action=install
+    local action=
     if [ "x$1" = "xUpdate" ] ; then
-        action=reinstall
+        action="--only-upgrade"
+    elif [ "x$1" = "xReinstall" ] ; then
+        #FIXME: action="--reinstall"
+        action=
     fi
     
-    echo "deb http://rpms.litespeedtech.com/debian/ $OSVER main"  > /etc/apt/sources.list.d/lst_debian_repo.list
+    
+    grep -Fq  "http://rpms.litespeedtech.com/debian/" /etc/apt/sources.list.d/lst_debian_repo.list
+    if [ $? != 0 ] ; then
+        echo "deb http://rpms.litespeedtech.com/debian/ $OSVER main"  > /etc/apt/sources.list.d/lst_debian_repo.list
+    fi
+    
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
     apt-get -y update
-    apt-get -y install openlitespeed
-    apt-get -y install lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  
+    apt-get -y install $action openlitespeed
+    
+    if [ ! -e $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp ] ; then
+        action=
+    fi
+    apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  
 
+    
     if [ "x$LSPHPVER" != "x70" ] ; then
-        apt-get -y install lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
+        apt-get -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
     else
-       apt-get -y install lsphp$LSPHPVER-common
+       apt-get -y install $action lsphp$LSPHPVER-common
     fi
     
     if [ $? != 0 ] ; then
@@ -336,21 +369,21 @@ function uninstall_ols_debian
         LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
         echoY "The installed version of lsphp is $LSPHPVER"
         
-        apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap
-        
         if [ "x$LSPHPVER" != "x70" ] ; then
             apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
         else
             apt-get -y --purge remove lsphp$LSPHPVER-common
         fi
-        
+
+        apt-get -y --purge remove lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap 'lsphp*'
         if [ $? != 0 ] ; then
             echoR "An error occured while uninstalling openlitespeed/lsphp."
             ALLERRORS=1
         fi
     else
+        apt-get -y --purge remove lsphp*
         echoR "Uninstallation cannot get the version of the currently installed lsphp."
-        echoR "Can not uninstall lsphp correctly."
+        echoR "May not uninstall lsphp correctly."
         LSPHPVER=
     fi
 
@@ -507,8 +540,12 @@ END
             apt-get install software-properties-common
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
         fi
-        echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/10.1/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
-    
+        
+        grep -Fq  "http://mirror.jaleco.com/mariadb/repo/" /etc/apt/sources.list.d/mariadb_repo.list
+        if [ $? != 0 ] ; then
+            echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/10.1/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
+        fi
+
         apt-get -y -f --force-yes install mariadb-server
         if [ $? != 0 ] ; then
             echoR "An error occured during installation of MariaDB. Please fix this error and try again."
@@ -684,8 +721,17 @@ function install_ols
 {
     local STATUS=Install
     if [ "x$OLSINSTALLED" = "x1" ] ; then
-        echoY "OpenLiteSpeed is already installed, will attempt to update it."
-        STATUS=Update
+        OLS_VERSION=$(cat "$SERVER_ROOT"/VERSION)
+        wget -O "$SERVER_ROOT"/release.tmp  http://open.litespeedtech.com/packages/release?ver=$OLS_VERSION
+        LATEST_VERSION=$(cat "$SERVER_ROOT"/release.tmp)
+        rm "$SERVER_ROOT"/release.tmp
+        if [ "x$OLS_VERSION" = "x$LATEST_VERSION" ] ; then
+            STATUS=Reinstall
+            echoY "OpenLiteSpeed is already installed with the latest version, will attempt to reinstall it."
+        else
+            STATUS=Update
+            echoY "OpenLiteSpeed is already installed and newer version is available, will attempt to update it."
+        fi
     fi
 
     if [ "x$OSNAME" = "xcentos" ] ; then
@@ -726,16 +772,16 @@ map                     wordpress $SITEDOMAIN
 module cache {
 param <<<PARAMFLAG
 
-enableCache         1
+enableCache         0
 qsCache             1
 reqCookieCache      1
 respCookieCache     1
 ignoreReqCacheCtrl  1
 ignoreRespCacheCtrl 0
-expireInSeconds     2000
-maxStaleAge         1000
-enablePrivateCache  1
-privateExpireInSeconds 1000                      
+expireInSeconds     3600
+maxStaleAge         200
+enablePrivateCache  0
+privateExpireInSeconds 3600                      
 checkPrivateCache   1
 checkPublicCache    1
 maxCacheObjSize     100000000
