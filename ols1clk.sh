@@ -71,7 +71,8 @@ EMAIL=
 LSPHPVERLIST=(54 55 56 70 71)
 
 #default version
-LSPHPVER=56
+LSPHPVER=71
+USEDEFAULTLSPHP=1
 
 ALLERRORS=0
 TEMPPASSWORD=
@@ -251,7 +252,7 @@ function install_ols_centos
     fi
     
     local ND=
-    if [ "x$LSPHPVER" = "x70" ] ; then
+    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
         ND=nd
         if [ "x$OSVER" = "x5" ] ; then
             rpm -Uvh http://repo.mysql.com/mysql-community-release-el5.rpm
@@ -298,7 +299,7 @@ function uninstall_ols_centos
         echoY "The installed version of lsphp is $LSPHPVER"
         
         local ND=
-        if [ "x$LSPHPVER" = "x70" ] ; then
+        if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
             ND=nd
         fi
         
@@ -346,7 +347,7 @@ function install_ols_debian
     apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  
 
     
-    if [ "x$LSPHPVER" != "x70" ] ; then
+    if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] ; then
         apt-get -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
     else
        apt-get -y install $action lsphp$LSPHPVER-common
@@ -371,7 +372,7 @@ function uninstall_ols_debian
         LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
         echoY "The installed version of lsphp is $LSPHPVER"
         
-        if [ "x$LSPHPVER" != "x70" ] ; then
+        if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] ; then
             apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
         else
             apt-get -y --purge remove lsphp$LSPHPVER-common
@@ -1059,6 +1060,7 @@ while [ "$1" != "" ]; do
                                     do
                                         if [ "x$1" = "x${LSPHPVERLIST[$i]}" ] ; then
                                             LSPHPVER=$1
+                                            USEDEFAULTLSPHP=0
                                         fi
                                     done
                                     ;;                                    
@@ -1182,7 +1184,7 @@ fi
 
 
 if [ "x$OSNAMEVER" = "xCENTOS5" ] ; then
-   if [ "x$LSPHPVER" = "x70" ] ; then
+   if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
        echoY "We do not support lsphp7 on Centos 5, will use lsphp56."
        LSPHPVER=56
    fi
@@ -1210,6 +1212,14 @@ fi
 if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
     read_password "$WPPASSWORD" "Wordpress admin password"
     WPPASSWORD=$TEMPPASSWORD
+fi
+
+
+if [ "x$USEDEFAULTLSPHP" = "x1" ] ; then
+    if [ "x$INSTALLWORDPRESS" = "x1" ] && [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
+        #For existing wordpress, choose lsphp56 as default
+        LSPHPVER=56
+    fi
 fi
 
 echo
