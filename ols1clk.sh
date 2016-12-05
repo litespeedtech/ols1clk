@@ -948,8 +948,8 @@ function check_value_follow
 
 function usage
 {
-    echoY "Usage:                             " "$0 [options] [options] ..."
-    echoY "Options:                           "
+    echoY "USAGE:                             " "$0 [options] [options] ..."
+    echoY "OPTIONS                            "
     echoG " --adminpassword(-a) [PASSWORD]    " "To set the webAdmin password for openlitespeed instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --email(-e) EMAIL                 " "To set the email of the administrator."
@@ -980,6 +980,15 @@ function usage
     echoG " --version(-v)                     " "To display version information."
     echoG " --help(-h)                        " "To display usage."
     echo
+    echoY "EXAMPLES                           "
+    echoG "./ols1clk.sh                       " "To install openlitespeed of the latest version with random webAdmin password."
+    echoG "./ols1clk.sh --lsphp 71            " "To install openlitespeed of the latest version with lsphp71."
+    echoG "./ols1clk.sh -a 123456 -e a@cc.com " "To install openlitespeed of the latest version with specified webAdmin password and email."
+    echoG "./ols1clk.sh -r 123456 -w          " "To install openlitespeed with wordpress with specifies mysql root password."
+    echoG "./ols1clk.sh -a 123 -r 1234 --wordpressplus a.com"  ""
+    echo  "                                   To install openlitespeed with wordpress with specifies mysql root password and finished all settings."
+    echo
+    
 }
 
 function uninstall_warn
