@@ -68,7 +68,7 @@ EMAIL=
 
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
-LSPHPVERLIST=(54 55 56 70)
+LSPHPVERLIST=(54 55 56 70 71)
 
 #default version
 LSPHPVER=56
@@ -335,6 +335,8 @@ function install_ols_debian
     fi
     
     wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
+    wget -O /etc/apt/trusted.gpg.d/lst_repo.gpg http://rpms.litespeedtech.com/debian/lst_repo.gpg
+    
     apt-get -y update
     apt-get -y install $action openlitespeed
     
