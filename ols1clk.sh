@@ -778,7 +778,7 @@ enableCache         0
 qsCache             1
 reqCookieCache      1
 respCookieCache     1
-ignoreReqCacheCtrl  1
+ignoreReqCacheCtrl  0
 ignoreRespCacheCtrl 0
 expireInSeconds     3600
 maxStaleAge         200
