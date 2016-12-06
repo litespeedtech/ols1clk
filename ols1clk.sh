@@ -325,8 +325,7 @@ function install_ols_debian
     if [ "x$1" = "xUpdate" ] ; then
         action="--only-upgrade"
     elif [ "x$1" = "xReinstall" ] ; then
-        #FIXME: action="--reinstall"
-        action=
+        action="--reinstall"
     fi
     
     
