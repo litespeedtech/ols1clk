@@ -986,6 +986,8 @@ function usage
     echoG "./ols1clk.sh -r 123456 -w          " "To install openlitespeed with wordpress with specifies mysql root password."
     echoG "./ols1clk.sh -a 123 -r 1234 --wordpressplus a.com"  ""
     echo  "                                   To install openlitespeed with wordpress with specifies mysql root password and finished all settings."
+    echoG "./ols1clk.sh -a 123 -r 1234 --wplang zh_CN --sitetitle mySite --wordpressplus a.com"  ""
+    echo  "                                   To install openlitespeed with wordpress with specifies mysql root password and finished all settings."
     echo
     
 }
