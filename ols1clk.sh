@@ -1348,7 +1348,7 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
     echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
 fi
 
-
+chmod 600 '$SERVER_ROOT/password'
 echoY "Please be aware that your password was written to file '$SERVER_ROOT/password'." 
 
 if [ "x$ALLERRORS" = "x0" ] ; then
