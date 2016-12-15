@@ -1317,6 +1317,7 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     
     if [ "x$WPPORT" = "x80" ] ; then
         echoY "Trying to stop some web servers that may be using port 80."
+        killall -9 apache  >/dev/null 2>&1
         killall -9 apache2  >/dev/null 2>&1
         killall -9 httpd    >/dev/null 2>&1
     fi
@@ -1348,7 +1349,7 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
     echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
 fi
 
-chmod 600 '$SERVER_ROOT/password'
+chmod 600 "$SERVER_ROOT/password"
 echoY "Please be aware that your password was written to file '$SERVER_ROOT/password'." 
 
 if [ "x$ALLERRORS" = "x0" ] ; then
