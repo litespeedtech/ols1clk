@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2016 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2017 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -132,8 +132,8 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 1.6                      *'
-    echoY '*                    Copyright (C) 2016 LiteSpeed Technologies, Inc.                         *'
+    echoY '*                    Open LiteSpeed One click installation, Version 1.7                      *'
+    echoY '*                    Copyright (C) 2016 - 2017 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -778,7 +778,7 @@ enableCache         0
 qsCache             1
 reqCookieCache      1
 respCookieCache     1
-ignoreReqCacheCtrl  0
+ignoreReqCacheCtrl  1
 ignoreRespCacheCtrl 0
 expireInSeconds     3600
 maxStaleAge         200
@@ -786,7 +786,7 @@ enablePrivateCache  0
 privateExpireInSeconds 3600                      
 checkPrivateCache   1
 checkPublicCache    1
-maxCacheObjSize     100000000
+maxCacheObjSize     10000000
 
 PARAMFLAG
 }
