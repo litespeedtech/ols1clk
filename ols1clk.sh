@@ -69,10 +69,13 @@ EMAIL=
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
 LSPHPVERLIST=(54 55 56 70 71)
+MARIADBVERLIST=(10.0 10.1 10.2)
 
 #default version
 LSPHPVER=56
 USEDEFAULTLSPHP=1
+MARIADBVER=10.2
+USEDEFAULTLSMARIADB=1
 
 ALLERRORS=0
 TEMPPASSWORD=
@@ -507,8 +510,8 @@ function install_mysql
             cat >> $REPOFILE <<END 
 [mariadb]
 name = MariaDB
-baseurl = http://yum.mariadb.org/10.1/$CENTOSVER
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+baseurl = http://yum.mariadb.org/$MARIADBVER/$CENTOSVER
+gpgkey=http://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 gpgcheck=1
 
 END
@@ -545,7 +548,7 @@ END
         
         grep -Fq  "http://mirror.jaleco.com/mariadb/repo/" /etc/apt/sources.list.d/mariadb_repo.list
         if [ $? != 0 ] ; then
-            echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/10.1/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
+            echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
         fi
 
         apt-get -y -f --force-yes install mariadb-server
@@ -953,6 +956,7 @@ function usage
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --email(-e) EMAIL                 " "To set the email of the administrator."
     echoG " --lsphp VERSION                   " "To set the version of lsphp, such as 56, now we support '${LSPHPVERLIST[@]}'."
+    echoG " --mariadbver VERSION              " "To set the version of mariadb, such as 10.2, now we support '${MARIADBVERLIST[@]}'."
     echoG " --wordpress(-w)                   " "To install and setup wordpress, you will still need to access the /wp-admin/wp-config.php"
     echoG "                                   " "file to finish your wordpress installation."
     echoG " --wordpressplus SITEDOMAIN        " "To install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup."
@@ -1073,7 +1077,19 @@ while [ "$1" != "" ]; do
                                             USEDEFAULTLSPHP=0
                                         fi
                                     done
-                                    ;;                                    
+                                    ;;          
+
+             --mariadbver )         check_value_follow "$2" "mariadb version"
+                                    shift
+                                    cnt=${#MARIADBVERLIST[@]}
+                                    for (( i = 0 ; i < cnt ; i++ ))
+                                    do
+                                        if [ "x$1" = "x${MARIADBVERLIST[$i]}" ] ; then
+                                            MARIADBVER=$1
+                                            USEDEFAULTLSMARIADB=0
+                                        fi
+                                    done
+                                    ;;                         
                                     
         -w | --wordpress )          INSTALLWORDPRESS=1
                                     ;;
@@ -1232,12 +1248,19 @@ if [ "x$USEDEFAULTLSPHP" = "x1" ] ; then
     fi
 fi
 
+if [ "x$USEDEFAULTLSMARIADB" = "x1" ] ; then
+    if [ "x$INSTALLWORDPRESS" = "x1" ] && [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
+        #For existing wordpress, choose MariaDB10.2 as default
+        MARIADBVER=10.2
+    fi
+fi
+
 echo
 echoR "Starting to install openlitespeed to $SERVER_ROOT/ with the parameters below,"
 echoY "WebAdmin password:        " "$ADMINPASSWORD"
 echoY "WebAdmin email:           " "$EMAIL"
 echoY "lsphp version:            " "$LSPHPVER"
-
+echoY "mariadb version:          " "$MARIADBVER"
 
 
 WORDPRESSINSTALLED=
