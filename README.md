@@ -19,6 +19,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
   * If you omit **[PASSWORD]**, ols1clk will prompt you to provide this password during installation.
 * **--email(-e) EMAIL:** to set the email of the administrator.
 * **--lsphp VERSION:** to set the version of lsphp, such as 56, we currently support 54 55 56 and 70.
+* **--mariadbver VERSION:** to set the version of mariadb server, such as 10.1, we currently support 10.0 10.1 and 10.2.
 * **--wordpress(-w):** to install and setup wordpress. You will still need to access the /wp-admin/wp-config.php file to finish your wordpress installation.
 * **--wordpressplus SITEDOMAIN:** to install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup. 
 * **--wordpresspath WORDPRESSPATH:** to specify a location for the new wordpress installation or use an existing wordpress installation.
