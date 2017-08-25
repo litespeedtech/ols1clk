@@ -270,13 +270,13 @@ function install_ols_centos
         action=install
     fi
     
-    #special case for lsphp56
-    if [ "x$action" = "xreinstall" ] && [ "x$LSPHPVER" = "x56" ] ; then
-        yum -y remove lsphp56-mysql
-        yum -y install lsphp56-mysql
+    #special case for lsphp-mysql
+    if [ "x$action" = "xreinstall" ] ; then
+        yum -y remove lsphp$LSPHPVER-mysql$ND
     fi
+    yum -y install lsphp$LSPHPVER-mysql$ND
     
-    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
+    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     
     if [ $? != 0 ] ; then
         echoR "An error occured during openlitespeed installation."
