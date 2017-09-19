@@ -254,6 +254,12 @@ function install_ols_centos
         action=reinstall
     fi
     
+    local JSON=
+    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
+        JSON=lsphp$LSPHPVER-json
+    fi
+    
+    
     yum -y $action epel-release
     rpm -Uvh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
     yum -y $action openlitespeed
@@ -268,7 +274,7 @@ function install_ols_centos
     fi
     yum -y install lsphp$LSPHPVER-mysqlnd
     
-    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
+    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON
     
     if [ $? != 0 ] ; then
         echoR "An error occured during openlitespeed installation."
@@ -293,12 +299,12 @@ function uninstall_ols_centos
         LSPHPVER=`echo $LSPHPSTR | awk '{print substr($0,6,2)}'`
         echoY "The installed version of lsphp is $LSPHPVER"
         
-        local ND=
+        local JSON=
         if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
-            ND=nd
+            JSON=lsphp$LSPHPVER-json
         fi
         
-        yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap lsphp*
+        yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysqlnd lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON lsphp*
         if [ $? != 0 ] ; then
             echoR "An error occured while uninstalling lsphp$LSPHPVER"
             ALLERRORS=1
@@ -338,13 +344,13 @@ function install_ols_debian
     if [ ! -e $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp ] ; then
         action=
     fi
-    apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap lsphp$LSPHPVER-curl 
+    apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap lsphp$LSPHPVER-curl
 
     
     if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] ; then
         apt-get -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
     else
-       apt-get -y install $action lsphp$LSPHPVER-common
+       apt-get -y install $action lsphp$LSPHPVER-common lsphp$LSPHPVER-json
     fi
     
     if [ $? != 0 ] ; then
