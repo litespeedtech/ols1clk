@@ -254,14 +254,6 @@ function install_ols_centos
         action=reinstall
     fi
     
-    local ND=
-    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
-        ND=nd
-        if [ "x$OSVER" = "x5" ] ; then
-            rpm -Uvh http://repo.mysql.com/mysql-community-release-el5.rpm
-        fi
-    fi
-    
     yum -y $action epel-release
     rpm -Uvh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
     yum -y $action openlitespeed
@@ -272,9 +264,9 @@ function install_ols_centos
     
     #special case for lsphp-mysql
     if [ "x$action" = "xreinstall" ] ; then
-        yum -y remove lsphp$LSPHPVER-mysql$ND
+        yum -y remove lsphp$LSPHPVER-mysqlnd
     fi
-    yum -y install lsphp$LSPHPVER-mysql$ND
+    yum -y install lsphp$LSPHPVER-mysqlnd
     
     yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     
@@ -346,7 +338,7 @@ function install_ols_debian
     if [ ! -e $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp ] ; then
         action=
     fi
-    apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap  
+    apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap lsphp$LSPHPVER-curl 
 
     
     if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] ; then
