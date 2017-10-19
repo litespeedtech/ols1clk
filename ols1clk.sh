@@ -946,6 +946,20 @@ function check_value_follow
 }
 
 
+function fixLangTypo
+{
+    #Now change type for chinese
+    LANGSTR=`echo "$WPLANGUAGE" | awk '{print tolower($0)}'`
+    if [ "x$LANGSTR" = "xzh_cn" ] || [ "x$LANGSTR" = "xzh-cn" ] || [ "x$LANGSTR" = "xcn" ] ; then
+        WPLANGUAGE=zh_CN
+    fi
+    
+    if [ "x$LANGSTR" = "xzh_tw" ] || [ "x$LANGSTR" = "xzh-tw" ] || [ "x$LANGSTR" = "xtw" ] ; then
+        WPLANGUAGE=zh_TW
+    fi
+    
+}
+
 function usage
 {
     echoY "USAGE:                             " "$0 [options] [options] ..."
@@ -1147,6 +1161,7 @@ while [ "$1" != "" ]; do
              --wplang )             check_value_follow "$2" "wordpress language"
                                     shift
                                     WPLANGUAGE=$FOLLOWPARAM
+                                    fixLangTypo
                                     ;;
                                     
              --sitetitle )          check_value_follow "$2" "wordpress website title"
