@@ -410,7 +410,7 @@ function install_wordpress
         fi
         
         
-        wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
+        wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chown -R --reference=$SERVER_ROOT/autoupdate  $WORDPRESSPATH
         
         cd -
