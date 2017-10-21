@@ -19,6 +19,7 @@
 
 ###    Author: dxu@litespeedtech.com (David Shue)
 
+
 TEMPRANDSTR=
 function getRandPassword
 {
@@ -82,6 +83,8 @@ TEMPPASSWORD=
 
 ACTION=INSTALL
 FOLLOWPARAM=
+
+MYGITHUBURL=https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
 
 function echoY
 {
@@ -965,6 +968,23 @@ function fixLangTypo
     
 }
 
+function updatemyself
+{
+    local CURMD=`md5sum "$0" | cut -d' ' -f1`
+    local SERVERMD=`md5sum  <(wget $MYGITHUBURL -O- 2>/dev/null)  | cut -d' ' -f1`
+    if [ "x$CURMD" = "x$SERVERMD" ] ; then
+        echoG "You already have the latest version installed."
+    else
+        wget -O "$0" $MYGITHUBURL
+        CURMD=`md5sum "$0" | cut -d' ' -f1`
+        if [ "x$CURMD" = "x$SERVERMD" ] ; then
+            echoG "Updated."
+        else
+            echoG "Tried to update but seems to be failed."
+        fi
+    fi
+}
+
 function usage
 {
     echoY "USAGE:                             " "$0 [options] [options] ..."
@@ -998,6 +1018,7 @@ function usage
     echoG " --quiet                           " "Set to quiet mode, won't prompt to input anything."
 
     echoG " --version(-v)                     " "To display version information."
+    echoG " --update                          " "To update ols1clk from github."
     echoG " --help(-h)                        " "To display usage."
     echo
     echoY "EXAMPLES                           "
@@ -1174,18 +1195,22 @@ while [ "$1" != "" ]; do
                                     WPTITLE=$FOLLOWPARAM
                                     ;;
 
-            --uninstall )           ACTION=UNINSTALL
+             --uninstall )          ACTION=UNINSTALL
                                     ;;
 
-            --purgeall )            ACTION=PURGEALL
+             --purgeall )           ACTION=PURGEALL
                                     ;;
                                     
-            --quiet )               FORCEYES=1
+             --quiet )              FORCEYES=1
                                     ;;
 
         -v | --version )            exit 0
                                     ;;                                    
-                                    
+
+             --update )             updatemyself
+                                    exit 0
+                                    ;;                                    
+        
         -h | --help )               usage
                                     exit 0
                                     ;;
