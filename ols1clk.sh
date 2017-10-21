@@ -264,6 +264,11 @@ function install_ols_centos
     rpm -Uvh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm
     yum -y $action openlitespeed
     
+    #Sometimes it may fail and do a reinstall to fix
+    if [ ! -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
+        yum -y reinstall openlitespeed
+    fi
+    
     if [ ! -e $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp ] ; then
         action=install
     fi
