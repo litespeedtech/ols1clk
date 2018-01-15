@@ -69,7 +69,7 @@ EMAIL=
 
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
-LSPHPVERLIST=(54 55 56 70 71)
+LSPHPVERLIST=(54 55 56 70 71 72)
 MARIADBVERLIST=(10.0 10.1 10.2)
 
 #default version
@@ -258,7 +258,7 @@ function install_ols_centos
     fi
     
     local JSON=
-    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
+    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] ; then
         JSON=lsphp$LSPHPVER-json
     fi
     
@@ -308,7 +308,7 @@ function uninstall_ols_centos
         echoY "The installed version of lsphp is $LSPHPVER"
         
         local JSON=
-        if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
+        if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] ; then
             JSON=lsphp$LSPHPVER-json
         fi
         
@@ -355,7 +355,7 @@ function install_ols_debian
     apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap lsphp$LSPHPVER-curl
 
     
-    if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] ; then
+    if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] && [ "x$LSPHPVER" != "x72" ] ; then
         apt-get -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt 
     else
        apt-get -y install $action lsphp$LSPHPVER-common lsphp$LSPHPVER-json
@@ -380,7 +380,7 @@ function uninstall_ols_debian
         LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
         echoY "The installed version of lsphp is $LSPHPVER"
         
-        if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] ; then
+        if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] && [ "x$LSPHPVER" != "x72" ] ; then
             apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
         else
             apt-get -y --purge remove lsphp$LSPHPVER-common
@@ -1253,7 +1253,7 @@ fi
 
 
 if [ "x$OSNAMEVER" = "xCENTOS5" ] ; then
-   if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] ; then
+   if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] ; then
        echoY "We do not support lsphp7 on Centos 5, will use lsphp56."
        LSPHPVER=56
    fi
