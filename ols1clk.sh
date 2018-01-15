@@ -1023,7 +1023,7 @@ function usage
     echo
     echoY "EXAMPLES                           "
     echoG "./ols1clk.sh                       " "To install openlitespeed of the latest version with random webAdmin password."
-    echoG "./ols1clk.sh --lsphp 71            " "To install openlitespeed of the latest version with lsphp71."
+    echoG "./ols1clk.sh --lsphp 72            " "To install openlitespeed of the latest version with lsphp72."
     echoG "./ols1clk.sh -a 123456 -e a@cc.com " "To install openlitespeed of the latest version with specified webAdmin password and email."
     echoG "./ols1clk.sh -r 123456 -w          " "To install openlitespeed with wordpress with specifies mysql root password."
     echoG "./ols1clk.sh -a 123 -r 1234 --wordpressplus a.com"  ""
