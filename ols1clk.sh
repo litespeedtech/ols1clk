@@ -70,12 +70,12 @@ EMAIL=
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
 LSPHPVERLIST=(54 55 56 70 71 72)
-MARIADBVERLIST=(10.0 10.1 10.2)
+MARIADBVERLIST=(10.0 10.1 10.2 10.3)
 
 #default version
 LSPHPVER=56
 USEDEFAULTLSPHP=1
-MARIADBVER=10.2
+MARIADBVER=10.3
 USEDEFAULTLSMARIADB=1
 
 ALLERRORS=0
@@ -138,8 +138,8 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 1.7                      *'
-    echoY '*                    Copyright (C) 2016 - 2017 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Open LiteSpeed One click installation, Version 1.8                      *'
+    echoY '*                    Copyright (C) 2016 - 2018 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -151,52 +151,45 @@ function check_os
     MARIADBCPUARCH=
     
     if [ -f /etc/redhat-release ] ; then
-        cat /etc/redhat-release | grep " 5." >/dev/null
+        cat /etc/redhat-release | grep " 6." >/dev/null
         if [ $? = 0 ] ; then
-            OSNAMEVER=CENTOS5
+            OSNAMEVER=CENTOS6
             OSNAME=centos
-            OSVER=5
+            OSVER=6
         else
-            cat /etc/redhat-release | grep " 6." >/dev/null
+            cat /etc/redhat-release | grep " 7." >/dev/null
             if [ $? = 0 ] ; then
-                OSNAMEVER=CENTOS6
+                OSNAMEVER=CENTOS7
                 OSNAME=centos
-                OSVER=6
-            else
-                cat /etc/redhat-release | grep " 7." >/dev/null
-                if [ $? = 0 ] ; then
-                    OSNAMEVER=CENTOS7
-                    OSNAME=centos
-                    OSVER=7
+                OSVER=7
 
-                fi
             fi
         fi
     elif [ -f /etc/lsb-release ] ; then
-        cat /etc/lsb-release | grep "DISTRIB_RELEASE=12." >/dev/null
+        cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." >/dev/null
         if [ $? = 0 ] ; then
-            OSNAMEVER=UBUNTU12
+            OSNAMEVER=UBUNTU14
             OSNAME=ubuntu
-            OSVER=precise
-            MARIADBCPUARCH="arch=amd64,i386"
-            
+            OSVER=trusty
+            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
         else
-            cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." >/dev/null
+            cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." >/dev/null
             if [ $? = 0 ] ; then
-                OSNAMEVER=UBUNTU14
+                OSNAMEVER=UBUNTU16
                 OSNAME=ubuntu
-                OSVER=trusty
+                OSVER=xenial
                 MARIADBCPUARCH="arch=amd64,i386,ppc64el"
+                
             else
-                cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." >/dev/null
+                cat /etc/lsb-release | grep "DISTRIB_RELEASE=18." >/dev/null
                 if [ $? = 0 ] ; then
-                    OSNAMEVER=UBUNTU16
+                    OSNAMEVER=UBUNTU18
                     OSNAME=ubuntu
-                    OSVER=xenial
-                    MARIADBCPUARCH="arch=amd64,i386,ppc64el"
+                    OSVER=bionic
+                    MARIADBCPUARCH="arch=amd64"
                 fi
             fi
-        fi    
+        fi
     elif [ -f /etc/debian_version ] ; then
         cat /etc/debian_version | grep "^7." >/dev/null
         if [ $? = 0 ] ; then
@@ -224,7 +217,7 @@ function check_os
     fi
 
     if [ "x$OSNAMEVER" = "x" ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(5-7), Debian(7-9) and Ubuntu(12,14,16)."
+        echoR "Sorry, currently one click installation only supports Centos(6,7), Debian(7-9) and Ubuntu(14,16,18)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         echo 
@@ -550,6 +543,9 @@ END
         elif [ "x$OSNAMEVER" = "xUBUNTU16" ] ; then
             apt-get install software-properties-common
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
+        elif [ "x$OSNAMEVER" = "xUBUNTU18" ] ; then
+            apt-get install software-properties-common
+            apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
         fi
         
         grep -Fq  "http://mirror.jaleco.com/mariadb/repo/" /etc/apt/sources.list.d/mariadb_repo.list
@@ -781,7 +777,6 @@ map                     wordpress $SITEDOMAIN
 
 
 module cache {
-param <<<PARAMFLAG
 
 enableCache         0
 qsCache             1
@@ -797,7 +792,6 @@ checkPrivateCache   1
 checkPublicCache    1
 maxCacheObjSize     10000000
 
-PARAMFLAG
 }
 
 END
@@ -819,10 +813,7 @@ context / {
   rewrite  {
     enable                1
     inherit               1
-    rules                 <<<END_rules
     rewriteFile           $WORDPRESSPATH/.htaccess
-
-END_rules
 
   }
 }
@@ -993,7 +984,7 @@ function usage
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --email(-e) EMAIL                 " "To set the email of the administrator."
     echoG " --lsphp VERSION                   " "To set the version of lsphp, such as 56, now we support '${LSPHPVERLIST[@]}'."
-    echoG " --mariadbver VERSION              " "To set the version of mariadb, such as 10.2, now we support '${MARIADBVERLIST[@]}'."
+    echoG " --mariadbver VERSION              " "To set the version of mariadb, such as 10.3, now we support '${MARIADBVERLIST[@]}'."
     echoG " --wordpress(-w)                   " "To install and setup wordpress, you will still need to access the /wp-admin/wp-config.php"
     echoG "                                   " "file to finish your wordpress installation."
     echoG " --wordpressplus SITEDOMAIN        " "To install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup."
@@ -1091,7 +1082,7 @@ function test_wordpress_plus
 #####################################################################################
 display_license
 
-while [ "$1" != "" ]; do
+while [ "$1" != "" ] ; do
     case $1 in
         -a | --adminpassword )      check_value_follow "$2" ""
                                     if [ "x$FOLLOWPARAM" != "x" ] ; then
@@ -1251,13 +1242,13 @@ if [ "x$ACTION" = "xPURGEALL" ] ; then
     exit 0
 fi
 
-
-if [ "x$OSNAMEVER" = "xCENTOS5" ] ; then
-   if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] ; then
-       echoY "We do not support lsphp7 on Centos 5, will use lsphp56."
-       LSPHPVER=56
+if [ "x$OSNAMEVER" = "xUBUNTU18" ] || [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
+    if [ "x$LSPHPVER" = "x54" ] || [ "x$LSPHPVER" = "x55" ] || [ "x$LSPHPVER" = "x56" ] ; then
+       echoY "We do not support lsphp$LSPHPVER on $OSNAMEVER, will use lsphp71."
+       LSPHPVER=71
    fi
 fi
+
 
 if [ "x$EMAIL" = "x" ] ; then
     if [ "x$SITEDOMAIN" = "x*" ] ; then
