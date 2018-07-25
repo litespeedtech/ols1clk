@@ -769,6 +769,41 @@ function set_ols_password
 function config_server
 {
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
+        sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
+        sed -i -e "s/8088/$WPPORT/" "$SERVER_ROOT/conf/httpd_config.conf"
+
+        cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
+
+module cache {
+
+enableCache         0
+qsCache             1
+reqCookieCache      1
+respCookieCache     1
+ignoreReqCacheCtrl  1
+ignoreRespCacheCtrl 0
+expireInSeconds     3600
+maxStaleAge         200
+enablePrivateCache  0
+privateExpireInSeconds 3600                      
+checkPrivateCache   1
+checkPublicCache    1
+maxCacheObjSize     10000000
+
+}
+
+END
+        
+    else
+        echoR "$SERVER_ROOT/conf/httpd_config.conf is missing, it seems that something went wrong during openlitespeed installation."
+        ALLERRORS=1
+    fi
+}
+
+
+function config_server_wp
+{
+    if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
         cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
@@ -1001,7 +1036,7 @@ function usage
     echoG " --dbuser DBUSERNAME               " "To set the username of wordpress in database."
     echoG " --dbpassword [PASSWORD]           " "To set the password of the table used by wordpress in mysql instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
-    echoG " --listenport WORDPRESSPORT        " "To set the wordpress listener port, default is 80."
+    echoG " --listenport LISTENPORT           " "To set the server listener port, default is 80."
     
     echoG " --wpuser WORDPRESSUSER            " "To set the wordpress user for admin login to the wordpress dashboard, default is wpuser."
     echoG " --wppassword [PASSWORD]           " "To set the wordpress password for admin login to the wordpress dashboard."
@@ -1068,7 +1103,7 @@ function test_page
 function test_ols
 {
     test_page https://localhost:7080/ "LiteSpeed WebAdmin" "test webAdmin page" 
-    test_page http://localhost:8088/  Congratulation "test Example vhost page" 
+    test_page http://localhost:$WPPORT/  Congratulation "test Example vhost page" 
 }
 
 function test_wordpress
@@ -1330,6 +1365,8 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
         WORDPRESSINSTALLED=0
     fi
+else
+    echoY "Server listenport:        " "$WPPORT"
 fi
 
 echo
@@ -1377,16 +1414,21 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         fi
     fi
     
-    config_server
+    config_server_wp
     echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
-    
-    if [ "x$WPPORT" = "x80" ] ; then
-        echoY "Trying to stop some web servers that may be using port 80."
-        killall -9 apache  >/dev/null 2>&1
-        killall -9 apache2  >/dev/null 2>&1
-        killall -9 httpd    >/dev/null 2>&1
-    fi
+else
+    #normal ols installation without wordpress
+    config_server
+
 fi
+
+if [ "x$WPPORT" = "x80" ] ; then
+    echoY "Trying to stop some web servers that may be using port 80."
+    killall -9 apache  >/dev/null 2>&1
+    killall -9 apache2  >/dev/null 2>&1
+    killall -9 httpd    >/dev/null 2>&1
+fi
+
 
 $SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
 $SERVER_ROOT/bin/lswsctrl start
