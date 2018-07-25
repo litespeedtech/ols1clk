@@ -57,6 +57,8 @@ USERNAME=olsdbuser
 
 WORDPRESSPATH=$SERVER_ROOT/wordpress
 WPPORT=80
+SSLWPPORT=443
+
 INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
 FORCEYES=0
@@ -83,6 +85,11 @@ TEMPPASSWORD=
 
 ACTION=INSTALL
 FOLLOWPARAM=
+
+CONFFILE=myssl.conf
+CSR=example.csr
+KEY=example.key
+CERT=example.crt
 
 MYGITHUBURL=https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
 
@@ -750,6 +757,76 @@ function install_ols
     fi
 }
 
+
+function gen_selfsigned_cert
+{
+    # source outside config file
+    if [ -e $CONFFILE ] ; then
+        source $CONFFILE 2>/dev/null
+        if [ $? != 0 ]; then
+            . $CONFFILE
+        fi
+    fi
+    
+    # set default value
+    if [ "${SSL_COUNTRY}" = "" ] ; then
+        SSL_COUNTRY=US
+    fi
+
+    if [ "${SSL_STATE}" = "" ] ; then
+        SSL_STATE="New Jersey"
+    fi
+
+    if [ "${SSL_LOCALITY}" = "" ] ; then
+        SSL_LOCALITY=Virtual
+    fi
+
+    if [ "${SSL_ORG}" = "" ] ; then
+        SSL_ORG=LiteSpeedCommunity
+    fi
+    
+    if [ "${SSL_ORGUNIT}" = "" ] ; then
+        SSL_ORGUNIT=Testing
+    fi
+
+    if [ "${SSL_HOSTNAME}" = "" ] ; then
+        SSL_HOSTNAME=webadmin
+    fi
+
+    if [ "${SSL_EMAIL}" = "" ] ; then
+        SSL_EMAIL=.
+    fi
+    
+
+# Create the certificate signing request
+    openssl req -new -passin pass:password -passout pass:password -out $CSR <<EOF
+${SSL_COUNTRY}
+${SSL_STATE}
+${SSL_LOCALITY}
+${SSL_ORG}
+${SSL_ORGUNIT}
+${SSL_HOSTNAME}
+${SSL_EMAIL}
+.
+.
+EOF
+    echo ""
+
+    [ -f ${CSR} ] && openssl req -text -noout -in ${CSR}
+    echo ""
+
+# Create the Key
+    openssl rsa -in privkey.pem -passin pass:password -passout pass:password -out ${KEY}
+# Create the Certificate
+    openssl x509 -in ${CSR} -out ${CERT} -req -signkey ${KEY} -days 1000
+    
+    mv ${KEY}   $SERVER_ROOT/conf/$KEY
+    mv ${CERT}  $SERVER_ROOT/conf/$CERT
+    chmod 0600 $SERVER_ROOT/conf/$KEY
+    chmod 0600 $SERVER_ROOT/conf/$CERT
+}
+
+
 function set_ols_password
 {
     #setup password
@@ -764,7 +841,11 @@ function set_ols_password
             echoY "OpenLiteSpeed webAdmin password not changed."
         fi
     fi
+    
 }
+
+
+
 
 function config_server
 {
@@ -774,6 +855,16 @@ function config_server
 
         cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
+listener Defaultssl {
+address                 *:$SSLWPPORT
+secure                  1
+map                     Example *
+keyFile                 $SERVER_ROOT/conf/$KEY
+certFile                $SERVER_ROOT/conf/$CERT
+}
+        
+        
+        
 module cache {
 
 enableCache         0
@@ -793,7 +884,7 @@ maxCacheObjSize     10000000
 }
 
 END
-        
+        chown -R lsadm:lsadm $SERVER_ROOT/conf/
     else
         echoR "$SERVER_ROOT/conf/httpd_config.conf is missing, it seems that something went wrong during openlitespeed installation."
         ALLERRORS=1
@@ -824,6 +915,15 @@ listener wordpress {
 address                 *:$WPPORT
 secure                  0
 map                     wordpress $SITEDOMAIN
+}
+
+
+listener wordpressssl {
+address                 *:$SSLWPPORT
+secure                  1
+map                     wordpress $SITEDOMAIN
+keyFile                 $SERVER_ROOT/conf/$KEY
+certFile                $SERVER_ROOT/conf/$CERT
 }
 
 
@@ -1036,7 +1136,8 @@ function usage
     echoG " --dbuser DBUSERNAME               " "To set the username of wordpress in database."
     echoG " --dbpassword [PASSWORD]           " "To set the password of the table used by wordpress in mysql instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
-    echoG " --listenport LISTENPORT           " "To set the server listener port, default is 80."
+    echoG " --listenport LISTENPORT           " "To set the HTTP server listener port, default is 80."
+    echoG " --ssllistenport LISTENPORT        " "To set the HTTPS server listener port, default is 443."
     
     echoG " --wpuser WORDPRESSUSER            " "To set the wordpress user for admin login to the wordpress dashboard, default is wpuser."
     echoG " --wppassword [PASSWORD]           " "To set the wordpress password for admin login to the wordpress dashboard."
@@ -1100,20 +1201,29 @@ function test_page
 }
 
 
-function test_ols
+function test_ols_admin
 {
     test_page https://localhost:7080/ "LiteSpeed WebAdmin" "test webAdmin page" 
-    test_page http://localhost:$WPPORT/  Congratulation "test Example vhost page" 
+}
+
+function test_ols
+{
+    test_page http://localhost:$WPPORT/  Congratulation "test Example HTTP vhost page" 
+    test_page https://localhost:$SSLWPPORT/  Congratulation "test Example HTTPS vhost page" 
 }
 
 function test_wordpress
 {
-    test_page http://localhost:$WPPORT/ "data-continue" "test wordpress first page" 
+    test_page http://localhost:8088/  Congratulation "test Example vhost page" 
+    test_page http://localhost:$WPPORT/ "data-continue" "test wordpress HTTP first page" 
+    test_page https://localhost:$SSLWPPORT/ "data-continue" "test wordpress HTTPS first page" 
 }
 
 function test_wordpress_plus
 {
-    test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress first page" 
+    test_page http://localhost:8088/  Congratulation "test Example vhost page" 
+    test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress HTTP first page" 
+    test_page https://$SITEDOMAIN:$SSLWPPORT/ hello-world "test wordpress HTTPS first page" 
 }
 
 
@@ -1198,11 +1308,15 @@ while [ "$1" != "" ] ; do
                                     USERPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
-             --listenport )         check_value_follow "$2" "listen port"
+             --listenport )         check_value_follow "$2" "HTTP listen port"
                                     shift
                                     WPPORT=$FOLLOWPARAM
                                     ;;
-
+             --ssllistenport )      check_value_follow "$2" "HTTPS listen port"
+                                    shift
+                                    SSLWPPORT=$FOLLOWPARAM
+                                    ;;
+                                    
              --wpuser )             check_value_follow "$2" "wordpress user"
                                     shift
                                     WPUSER=$1
@@ -1340,7 +1454,8 @@ echoY "mariadb version:          " "$MARIADBVER"
 WORDPRESSINSTALLED=
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     echoY "Install wordpress:        " Yes
-    echoY "WordPress listenport:     " "$WPPORT"
+    echoY "WordPress HTTP port:      " "$WPPORT"
+    echoY "WordPress HTTPS port:     " "$SSLWPPORT"
     echoY "Web site domain:          " "$SITEDOMAIN"
     echoY "Mysql root Password:      " "$ROOTPASSWORD"
     echoY "Database name:            " "$DATABASENAME"
@@ -1366,7 +1481,8 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         WORDPRESSINSTALLED=0
     fi
 else
-    echoY "Server listenport:        " "$WPPORT"
+    echoY "Server HTTP port:         " "$WPPORT"
+    echoY "Server HTTPS port:        " "$SSLWPPORT"
 fi
 
 echo
@@ -1390,10 +1506,11 @@ check_wget
 install_ols
 
 #write the password file for record and remove the previous file.
-echo "WebAdmin password is [admin:$ADMINPASSWORD]." > $SERVER_ROOT/password
+echo "WebAdmin username is [admin], password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
 
 
 set_ols_password
+gen_selfsigned_cert
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
@@ -1472,17 +1589,20 @@ fi
 
 echo
 echoY "Testing ..."
-test_ols
+test_ols_admin
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
         test_wordpress_plus
     else
         test_wordpress
     fi
+else
+    test_ols
 fi
 
 echo
 echoG "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
+echoG "If you have certificate and private key for your site, you need to replace the $KEY and $CERT in $SERVER_ROOT/conf."
 echoG 'Thanks for using "OpenLiteSpeed One click installation".'
 echoG "Enjoy!"
 echo
