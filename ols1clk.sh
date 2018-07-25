@@ -138,7 +138,7 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 1.8                      *'
+    echoY '*                    Open LiteSpeed One click installation, Version 1.9                      *'
     echoY '*                    Copyright (C) 2016 - 2018 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
@@ -750,6 +750,22 @@ function install_ols
     fi
 }
 
+function set_ols_password
+{
+    #setup password
+    ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
+    if [ $? = 0 ] ; then
+        echo "admin:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
+        if [ $? = 0 ] ; then
+            echoY "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
+            echoY "Finished updating server configuration."
+            
+        else
+            echoY "OpenLiteSpeed webAdmin password not changed."
+        fi
+    fi
+}
+
 function config_server
 {
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
@@ -822,18 +838,7 @@ END
             chown -R lsadm:lsadm $SERVER_ROOT/conf/
         fi
         
-        #setup password
-        ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
-        if [ $? = 0 ] ; then
-            echo "admin:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
-            if [ $? = 0 ] ; then
-                echoY "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
-                echoY "Finished updating server configuration."
-                
-           else
-                echoY "OpenLiteSpeed webAdmin password not changed."
-            fi
-        fi
+        
     else
         echoR "$SERVER_ROOT/conf/httpd_config.conf is missing, it seems that something went wrong during openlitespeed installation."
         ALLERRORS=1
@@ -1348,7 +1353,10 @@ check_wget
 install_ols
 
 #write the password file for record and remove the previous file.
-echo "WebAdmin password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
+echo "WebAdmin password is [admin:$ADMINPASSWORD]." > $SERVER_ROOT/password
+
+
+set_ols_password
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
