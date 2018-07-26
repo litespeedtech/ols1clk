@@ -852,7 +852,8 @@ function config_server
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
         sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
         sed -i -e "s/8088/$WPPORT/" "$SERVER_ROOT/conf/httpd_config.conf"
-
+        sed -i -e "s/ls_enabled          0/ls_enabled          1/" "$SERVER_ROOT/conf/httpd_config.conf"
+        
         cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
 listener Defaultssl {
@@ -861,26 +862,6 @@ secure                  1
 map                     Example *
 keyFile                 $SERVER_ROOT/conf/$KEY
 certFile                $SERVER_ROOT/conf/$CERT
-}
-        
-        
-        
-module cache {
-
-enableCache         0
-qsCache             1
-reqCookieCache      1
-respCookieCache     1
-ignoreReqCacheCtrl  1
-ignoreRespCacheCtrl 0
-expireInSeconds     3600
-maxStaleAge         200
-enablePrivateCache  0
-privateExpireInSeconds 3600                      
-checkPrivateCache   1
-checkPublicCache    1
-maxCacheObjSize     10000000
-
 }
 
 END
@@ -898,6 +879,8 @@ function config_server_wp
         cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
+            sed -i -e "s/ls_enabled          0/ls_enabled          1/" "$SERVER_ROOT/conf/httpd_config.conf"
+
             VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
 
             cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
@@ -926,24 +909,6 @@ keyFile                 $SERVER_ROOT/conf/$KEY
 certFile                $SERVER_ROOT/conf/$CERT
 }
 
-
-module cache {
-
-enableCache         0
-qsCache             1
-reqCookieCache      1
-respCookieCache     1
-ignoreReqCacheCtrl  1
-ignoreRespCacheCtrl 0
-expireInSeconds     3600
-maxStaleAge         200
-enablePrivateCache  0
-privateExpireInSeconds 3600                      
-checkPrivateCache   1
-checkPublicCache    1
-maxCacheObjSize     10000000
-
-}
 
 END
     
