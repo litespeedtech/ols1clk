@@ -852,7 +852,7 @@ function config_server
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
         sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
         sed -i -e "s/8088/$WPPORT/" "$SERVER_ROOT/conf/httpd_config.conf"
-        sed -i -e "s/ls_enabled          0/ls_enabled          1/" "$SERVER_ROOT/conf/httpd_config.conf"
+        sed -i -e "s/ls_enabled/ls_enabled   1\n#/" "$SERVER_ROOT/conf/httpd_config.conf"
         
         cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
@@ -879,7 +879,7 @@ function config_server_wp
         cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
-            sed -i -e "s/ls_enabled          0/ls_enabled          1/" "$SERVER_ROOT/conf/httpd_config.conf"
+            sed -i -e "s/ls_enabled/ls_enabled   1\n#/" "$SERVER_ROOT/conf/httpd_config.conf"
 
             VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
 
