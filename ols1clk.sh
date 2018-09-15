@@ -30,7 +30,7 @@ function getRandPassword
     TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
 }
 
-SITEDOMAIN=test.com
+#SITEDOMAIN=test.com
 OSNAMEVER=UNKNOWN
 OSNAME=
 OSVER=
@@ -1077,15 +1077,15 @@ function test_ols
     test_page http://localhost:8088/  Congratulation "test Example vhost page" 
 }
 
-function test_wordpress
-{
-    test_page http://localhost:$WPPORT/ "data-continue" "test wordpress first page" 
-}
+#function test_wordpress
+#{
+   # test_page http://localhost:$WPPORT/ "data-continue" "test wordpress first page" 
+#}
 
-function test_wordpress_plus
-{
-    test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress first page" 
-}
+#function test_wordpress_plus
+#{
+    #test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress first page" 
+#}
 
 
 #####################################################################################
@@ -1434,12 +1434,12 @@ fi
 echo
 echoY "Testing ..."
 test_ols
-if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-    if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
-        test_wordpress_plus
-    else
-        test_wordpress
-    fi
+#if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+   # if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
+        #test_wordpress_plus
+    #else
+        #test_wordpress
+    #fi
 fi
 
 echo
