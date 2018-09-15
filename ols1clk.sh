@@ -1340,7 +1340,7 @@ fi
 
 echo
 
-if [ "x$FORCEYES" != "xY" ] ; then
+if [ "x$FORCEYES" != "x0" ] ; then
     printf '\033[31mAre these settings correct? Type n to quit, otherwise will continue.[Y/n]\033[0m '
     read answer
     echo
