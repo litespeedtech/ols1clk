@@ -411,14 +411,14 @@ function install_wordpress
         mkdir $WORDPRESSPATH
         cd "$WPDIRNAME"
         
-        wget https://data.binom.org/Install_Binom_Latest.tar.gz
+        wget -P $WORDPRESSPATH https://data.binom.org/Install_Binom_Latest.tar.gz
         tar -xzvf Install_Binom_Latest.tar.gz  >/dev/null 2>&1
         rm Install_Binom_Latest.tar.gz
         #if [ "x$WPBASENAME" != "xwordpress" ] ; then
           #  mv wordpress/ $WPBASENAME/
        # fi
         
-        mkdir $WORDPRESSPATH
+       
         #wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chmod -R 755 $WORDPRESSPATH
         chown -R nobody $WORDPRESSPATH
