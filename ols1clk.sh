@@ -30,6 +30,7 @@ function getRandPassword
     TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
 }
 
+SITEDOMAIN=test.com
 OSNAMEVER=UNKNOWN
 OSNAME=
 OSVER=
@@ -851,20 +852,20 @@ END
 }
 
 
-function activate_cache
-{
-    cat > $WORDPRESSPATH/activate_cache.php <<END 
-<?php
-include '$WORDPRESSPATH/wp-load.php';
-include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
-include_once '$WORDPRESSPATH/wp-admin/includes/file.php';
-define('WP_ADMIN', true);
-activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
+#function activate_cache
+#{
+ #   cat > $WORDPRESSPATH/activate_cache.php <<END 
+#<?php
+#include '$WORDPRESSPATH/wp-load.php';
+#include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
+#include_once '$WORDPRESSPATH/wp-admin/includes/file.php';
+#define('WP_ADMIN', true);
+#activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
 
-END
-    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
-    rm $WORDPRESSPATH/activate_cache.php
-}
+#END
+ #   $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
+  #  rm $WORDPRESSPATH/activate_cache.php
+#}
 
 
 function getCurStatus
@@ -1369,7 +1370,7 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     
     if [ "x$WORDPRESSINSTALLED" != "x1" ] ; then
         install_wordpress
-        setup_wordpress
+        #setup_wordpress
     
         if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
             echoY "Mysql setup bypassed, can not get root password."
