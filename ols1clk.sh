@@ -410,16 +410,17 @@ function install_wordpress
     
         cd "$WPDIRNAME"
         
-        wget --no-check-certificate http://wordpress.org/latest.tar.gz
-        tar -xzvf latest.tar.gz  >/dev/null 2>&1
-        rm latest.tar.gz
+        wget https://data.binom.org/Install_Binom_Latest.tar.gz
+        tar -xzvf Install_Binom_Latest.tar.gz  >/dev/null 2>&1
+        rm Install_Binom_Latest.tar.gz
         if [ "x$WPBASENAME" != "xwordpress" ] ; then
             mv wordpress/ $WPBASENAME/
         fi
         
         
-        wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
-        chown -R --reference=$SERVER_ROOT/autoupdate  $WORDPRESSPATH
+        #wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
+        chmod -R 755 $WORDPRESSPATH
+        chown -R nobody $WORDPRESSPATH
         
         cd -
     else
@@ -429,22 +430,22 @@ function install_wordpress
 
 
 
-function setup_wordpress
-{
-    if [ -e "$WORDPRESSPATH/wp-config-sample.php" ] ; then
-        sed -e "s/database_name_here/$DATABASENAME/" -e "s/username_here/$USERNAME/" -e "s/password_here/$USERPASSWORD/" "$WORDPRESSPATH/wp-config-sample.php" > "$WORDPRESSPATH/wp-config.php"
-        if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
-            chown  -R --reference="$WORDPRESSPATH/wp-config-sample.php"   "$WORDPRESSPATH/wp-config.php"
-            echoG "Finished setting up WordPress."
-        else
-            echoR "WordPress setup failed. You may not have sufficient privileges to access $WORDPRESSPATH/wp-config.php."
-            ALLERRORS=1
-        fi
-    else
-        echoR "WordPress setup failed. File $WORDPRESSPATH/wp-config-sample.php does not exist."
-        ALLERRORS=1
-    fi
-}
+#function setup_wordpress
+#{
+ #   if [ -e "$WORDPRESSPATH/wp-config-sample.php" ] ; then
+  #      sed -e "s/database_name_here/$DATABASENAME/" -e "s/username_here/$USERNAME/" -e "s/password_here/$USERPASSWORD/" "$WORDPRESSPATH/wp-config-sample.php" > "$WORDPRESSPATH/wp-config.php"
+   #     if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
+    #        chown  -R --reference="$WORDPRESSPATH/wp-config-sample.php"   "$WORDPRESSPATH/wp-config.php"
+     #       echoG "Finished setting up WordPress."
+      #  else
+       #     echoR "WordPress setup failed. You may not have sufficient privileges to access $WORDPRESSPATH/wp-config.php."
+        #    ALLERRORS=1
+        #fi
+    #else
+     #   echoR "WordPress setup failed. File $WORDPRESSPATH/wp-config-sample.php does not exist."
+      #  ALLERRORS=1
+    #fi
+#}
 
 
 function test_mysql_password
