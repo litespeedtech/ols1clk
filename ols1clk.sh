@@ -30,7 +30,7 @@ function getRandPassword
     TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
 }
 
-SITEDOMAIN=test.com
+#SITEDOMAIN=test.com
 OSNAMEVER=UNKNOWN
 OSNAME=
 OSVER=
@@ -408,7 +408,7 @@ function install_wordpress
         local WPDIRNAME=`dirname $WORDPRESSPATH`
         local WPBASENAME=`basename $WORDPRESSPATH`
         mkdir -p "$WPDIRNAME"
-    
+        mkdir $WORDPRESSPATH
         cd "$WPDIRNAME"
         
         wget https://data.binom.org/Install_Binom_Latest.tar.gz
@@ -418,7 +418,7 @@ function install_wordpress
           #  mv wordpress/ $WPBASENAME/
        # fi
         
-        
+        mkdir $WORDPRESSPATH
         #wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chmod -R 755 $WORDPRESSPATH
         chown -R nobody $WORDPRESSPATH
