@@ -30,7 +30,7 @@ function getRandPassword
     TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
 }
 
-#SITEDOMAIN=test.com
+SITEDOMAIN=test.com
 OSNAMEVER=UNKNOWN
 OSNAME=
 OSVER=
@@ -1440,7 +1440,7 @@ test_ols
     #else
         #test_wordpress
     #fi
-fi
+#fi
 
 echo
 echoG "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
