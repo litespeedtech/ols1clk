@@ -761,7 +761,7 @@ function config_server
         cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
-            VHOSTCONF=$SERVER_ROOT/conf/vhosts/$SITEDOMAIN/vhconf.conf
+            VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
 
             cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
@@ -777,7 +777,7 @@ setUIDMode              2
 listener wordpress {
 address                 *:$WPPORT
 secure                  0
-map                     $SITEDOMAIN
+map                     wordpress $SITEDOMAIN
 }
 
 
@@ -803,7 +803,7 @@ PARAMFLAG
 
 END
     
-            mkdir -p $SERVER_ROOT/conf/vhosts/$SITEDOMAIN/
+            mkdir -p $SERVER_ROOT/conf/vhosts/wordpress/
             cat > $VHOSTCONF <<END 
 docRoot                   \$VH_ROOT/
 index  {
@@ -851,20 +851,20 @@ END
 }
 
 
-#function activate_cache
-#{
- #   cat > $WORDPRESSPATH/activate_cache.php <<END 
-#<?php
-#include '$WORDPRESSPATH/wp-load.php';
-#include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
-#include_once '$WORDPRESSPATH/wp-admin/includes/file.php';
-#define('WP_ADMIN', true);
-#activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
+function activate_cache
+{
+    cat > $WORDPRESSPATH/activate_cache.php <<END 
+<?php
+include '$WORDPRESSPATH/wp-load.php';
+include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
+include_once '$WORDPRESSPATH/wp-admin/includes/file.php';
+define('WP_ADMIN', true);
+activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
 
-#END
-    #$SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
-    #rm $WORDPRESSPATH/activate_cache.php
-#}
+END
+    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
+    rm $WORDPRESSPATH/activate_cache.php
+}
 
 
 function getCurStatus
@@ -1076,15 +1076,15 @@ function test_ols
     test_page http://localhost:8088/  Congratulation "test Example vhost page" 
 }
 
-#function test_wordpress
-#{
-#    test_page http://localhost:$WPPORT/ "data-continue" "test wordpress first page" 
-#}
+function test_wordpress
+{
+    test_page http://localhost:$WPPORT/ "data-continue" "test wordpress first page" 
+}
 
-#function test_wordpress_plus
-#{
-#    test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress first page" 
-#}
+function test_wordpress_plus
+{
+    test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress first page" 
+}
 
 
 #####################################################################################
@@ -1286,16 +1286,16 @@ fi
 
 
 if [ "x$USEDEFAULTLSPHP" = "x1" ] ; then
-    if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+    if [ "x$INSTALLWORDPRESS" = "x1" ] && [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
         #For existing wordpress, choose lsphp56 as default
         LSPHPVER=56
     fi
 fi
 
 if [ "x$USEDEFAULTLSMARIADB" = "x1" ] ; then
-    if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+    if [ "x$INSTALLWORDPRESS" = "x1" ] && [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
         #For existing wordpress, choose MariaDB10.1 as default
-        MARIADBVER=10.2
+        MARIADBVER=10.1
     fi
 fi
 
@@ -1328,13 +1328,13 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     fi
     
     
-    #if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
-     #   echoY "WordPress location:       " "$WORDPRESSPATH (Exsiting)"
-     #   WORDPRESSINSTALLED=1
-    #else
-    #    echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
-    #    WORDPRESSINSTALLED=0
-    #fi
+    if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
+        echoY "WordPress location:       " "$WORDPRESSPATH (Exsiting)"
+        WORDPRESSINSTALLED=1
+    else
+        echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
+        WORDPRESSINSTALLED=0
+    fi
 fi
 
 echo
@@ -1401,19 +1401,19 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
         INSTALLURL=http://$SITEDOMAIN/wp-admin/install.php
     fi
 
-   # wget $INSTALLURL >/dev/null 2>&1
-    #sleep 5
+    wget $INSTALLURL >/dev/null 2>&1
+    sleep 5
     
     #echo "wget --post-data 'language=$WPLANGUAGE' --referer=$INSTALLURL $INSTALLURL?step=1"
-    #wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1 >/dev/null 2>&1
-    #sleep 1
+    wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1 >/dev/null 2>&1
+    sleep 1
     
-    ##echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
-    #wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
+    #echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
+    wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
 
-    #activate_cache
+    activate_cache
     
-    #echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
+    echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
 fi
 
 chmod 600 "$SERVER_ROOT/password"
