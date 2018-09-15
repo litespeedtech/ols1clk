@@ -413,9 +413,9 @@ function install_wordpress
         wget https://data.binom.org/Install_Binom_Latest.tar.gz
         tar -xzvf Install_Binom_Latest.tar.gz  >/dev/null 2>&1
         rm Install_Binom_Latest.tar.gz
-        if [ "x$WPBASENAME" != "xwordpress" ] ; then
-            mv wordpress/ $WPBASENAME/
-        fi
+        #if [ "x$WPBASENAME" != "xwordpress" ] ; then
+          #  mv wordpress/ $WPBASENAME/
+       # fi
         
         
         #wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
