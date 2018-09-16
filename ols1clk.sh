@@ -422,6 +422,8 @@ function install_wordpress
         #wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chmod -R 755 $WORDPRESSPATH
         chown -R nobody $WORDPRESSPATH
+        wget -P /root http://data.binom.org/binom_check_space.sh
+        chown -R nobody /root/binom_check_space.sh
         
         cd -
     else
