@@ -762,7 +762,7 @@ function config_server
         cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
-            VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
+            VHOSTCONF=$SERVER_ROOT/conf/vhosts/$SITEDOMAIN/vhconf.conf
 
             cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
@@ -778,7 +778,7 @@ setUIDMode              2
 listener wordpress {
 address                 *:$WPPORT
 secure                  0
-map                     wordpress $SITEDOMAIN
+map                     $SITEDOMAIN
 }
 
 
@@ -804,7 +804,7 @@ PARAMFLAG
 
 END
     
-            mkdir -p $SERVER_ROOT/conf/vhosts/wordpress/
+            mkdir -p $SERVER_ROOT/conf/vhosts/$SITEDOMAIN/
             cat > $VHOSTCONF <<END 
 docRoot                   \$VH_ROOT/
 index  {
