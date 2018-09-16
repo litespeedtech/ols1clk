@@ -429,6 +429,8 @@ function install_wordpress
         cp ioncube/ioncube_loader_lin_5.6.so /usr/local/lsws/lsphp56/lib64/php/modules/ioncube_loader_lin_5.6.so
         echo "zend_extension = /usr/local/lsws/lsphp56/lib64/php/modules/ioncube_loader_lin_5.6.so" \
         > '/usr/local/lsws/lsphp56/etc/php.d/00-ioncube.ini'
+        rm -f /root/ioncube_loaders_lin_x86-64.tar.gz
+	    rm -rf /root/ioncube
         systemctl restart lsws
         cd -
     else
