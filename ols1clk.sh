@@ -424,7 +424,12 @@ function install_wordpress
         chown -R nobody $WORDPRESSPATH
         wget -P /root http://data.binom.org/binom_check_space.sh
         chown -R nobody /root/binom_check_space.sh
-        
+        wget -P /root https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.zip
+        tar -xzvf ioncube_loaders_lin_x86-64.zip
+        cp ioncube/ioncube_loader_lin_5.6.so /usr/local/lsws/lsphp56/lib64/php/modules/ioncube_loader_lin_5.6.so
+        echo "zend_extension = /usr/local/lsws/lsphp56/lib64/php/modules/ioncube_loader_lin_5.6.so" \
+        > '/usr/local/lsws/lsphp56/etc/php.d/00-ioncube.ini'
+        systemctl restart lsws
         cd -
     else
         echoY "$WORDPRESSPATH exists, will use it."
