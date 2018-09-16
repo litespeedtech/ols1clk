@@ -409,7 +409,7 @@ function install_wordpress
         local WPBASENAME=`basename $WORDPRESSPATH`
         mkdir -p "$WPDIRNAME"
         mkdir $WORDPRESSPATH
-        cd "$WPDIRNAME"
+        cd "$WORDPRESSPATH"
         
         wget -P $WORDPRESSPATH https://data.binom.org/Install_Binom_Latest.tar.gz
         tar -xzvf Install_Binom_Latest.tar.gz  >/dev/null 2>&1
