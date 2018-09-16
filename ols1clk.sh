@@ -766,7 +766,7 @@ function config_server
 
             cat >> $SERVER_ROOT/conf/httpd_config.conf <<END 
 
-virtualhost wordpress {
+virtualhost $SITEDOMAIN {
 vhRoot                  $WORDPRESSPATH
 configFile              $VHOSTCONF
 allowSymbolLink         1
@@ -775,7 +775,7 @@ restrained              0
 setUIDMode              2
 }
 
-listener wordpress {
+listener $SITEDOMAIN {
 address                 *:$WPPORT
 secure                  0
 map                     $SITEDOMAIN
