@@ -288,7 +288,8 @@ function install_ols_centos
         echoR "An error occured during OpenLiteSpeed installation."
         ALLERRORS=1
     else
-        ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
+        ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
+        sed -i -e "s/$SERVER_ROOT\/fcgi-bin\/lsphp/$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -365,7 +366,8 @@ function install_ols_debian
         echoR "An error occured during OpenLiteSpeed installation."
         ALLERRORS=1
     else
-        ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
+        ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
+        sed -i -e "s/$SERVER_ROOT\/fcgi-bin\/lsphp/$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -1509,6 +1511,7 @@ if [ "x$WPPORT" = "x80" ] ; then
     killall -9 apache  >/dev/null 2>&1
     killall -9 apache2  >/dev/null 2>&1
     killall -9 httpd    >/dev/null 2>&1
+    killall -9 nginx    >/dev/null 2>&1
 fi
 
 
