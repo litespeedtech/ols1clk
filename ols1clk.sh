@@ -289,7 +289,7 @@ function install_ols_centos
         ALLERRORS=1
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
-        sed -i -e "s/$SERVER_ROOT\/fcgi-bin\/lsphp/$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        sed -i -e "s/\$SERVER_ROOT\/fcgi-bin\/lsphp/\$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -367,7 +367,7 @@ function install_ols_debian
         ALLERRORS=1
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
-        sed -i -e "s/$SERVER_ROOT\/fcgi-bin\/lsphp/$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        sed -i -e "s/\$SERVER_ROOT\/fcgi-bin\/lsphp/\$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
