@@ -421,11 +421,11 @@ function install_wordpress
        
         #wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chmod -R 755 $WORDPRESSPATH
-        chown -R nobody $WORDPRESSPATH
+        chown -R nobody:nobody $WORDPRESSPATH
         wget -P /root http://data.binom.org/binom_check_space.sh
-        chown -R nobody /root/binom_check_space.sh
-        wget -P /root https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.zip
-        tar -xzvf ioncube_loaders_lin_x86-64.zip
+        chown -R nobody:nobody /root/binom_check_space.sh
+        wget -P /root https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz
+        tar -xzvf ioncube_loaders_lin_x86-64.tar.gz
         cp ioncube/ioncube_loader_lin_5.6.so /usr/local/lsws/lsphp56/lib64/php/modules/ioncube_loader_lin_5.6.so
         echo "zend_extension = /usr/local/lsws/lsphp56/lib64/php/modules/ioncube_loader_lin_5.6.so" \
         > '/usr/local/lsws/lsphp56/etc/php.d/00-ioncube.ini'
