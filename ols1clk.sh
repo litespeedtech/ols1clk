@@ -283,7 +283,7 @@ function install_ols_centos
     fi
     yum -y install lsphp$LSPHPVER-mysqlnd
     
-    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON
+    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-opcache lsphp$LSPHPVER-pdo lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-zip $JSON
     
     if [ $? != 0 ] ; then
         echoR "An error occured during openlitespeed installation."
