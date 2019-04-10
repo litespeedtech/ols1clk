@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2018 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2019 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -145,8 +145,8 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 1.9                      *'
-    echoY '*                    Copyright (C) 2016 - 2018 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Open LiteSpeed One click installation, Version 2.0                      *'
+    echoY '*                    Copyright (C) 2016 - 2019 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -289,7 +289,7 @@ function install_ols_centos
         ALLERRORS=1
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
-        sed -i -e "s/\$SERVER_ROOT\/fcgi-bin\/lsphp/\$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -367,7 +367,7 @@ function install_ols_debian
         ALLERRORS=1
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
-        sed -i -e "s/\$SERVER_ROOT\/fcgi-bin\/lsphp/\$SERVER_ROOT\/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
