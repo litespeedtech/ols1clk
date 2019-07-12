@@ -1514,7 +1514,7 @@ if [ "x$WPPORT" = "x80" ] ; then
     killall -9 nginx    >/dev/null 2>&1
 fi
 
-
+echo ols1clk > "$SERVER_ROOT/PLAT"
 $SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
 $SERVER_ROOT/bin/lswsctrl start
 
