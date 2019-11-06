@@ -145,7 +145,7 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 2.0                      *'
+    echoY '*                    Open LiteSpeed One click installation, Version 2.1                      *'
     echoY '*                    Copyright (C) 2016 - 2019 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
@@ -170,6 +170,13 @@ function check_os
                 OSNAME=centos
                 OSVER=7
 
+            else
+                cat /etc/redhat-release | grep " 8." >/dev/null
+                if [ $? = 0 ] ; then
+                    OSNAMEVER=CENTOS8
+                    OSNAME=centos
+                    OSVER=8
+                fi
             fi
         fi
     elif [ -f /etc/lsb-release ] ; then
@@ -218,13 +225,21 @@ function check_os
                     OSNAME=debian
                     OSVER=stretch
                     MARIADBCPUARCH="arch=amd64,i386"
+                else
+                    cat /etc/debian_version | grep "^10." >/dev/null
+                    if [ $? = 0 ] ; then
+                        OSNAMEVER=DEBIAN10
+                        OSNAME=debian
+                        OSVER=buster
+                        MARIADBCPUARCH="arch=amd64,i386"
+                    fi                    
                 fi
             fi
         fi
     fi
 
     if [ "x$OSNAMEVER" = "x" ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6,7), Debian(7-9) and Ubuntu(14,16,18)."
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         echo 
@@ -1141,7 +1156,7 @@ function uninstall_warn
         read answer
         echo
         
-        if [ "x$answer" != "xY" ] ; then
+        if [ "x$answer" != "xY" ] && [ "x$answer" != "xy" ] ; then
             echoG "Uninstallation aborted!" 
             exit 0
         fi
