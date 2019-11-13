@@ -589,7 +589,7 @@ END
         fi
 
     fi
-    if [ "x$OSNAMEVER" = "xCENTOS8" ] ; then
+    if [ "x$OSNAMEVER" = "xCENTOS8" ] || [ "x$OSNAMEVER" = "xCENTOS7" ] ; then
         systemctl enable mariadb
         systemctl start  mariadb
     else
