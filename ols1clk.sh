@@ -41,7 +41,7 @@ SERVER_ROOT=/usr/local/lsws
 #Current status
 OLSINSTALLED=
 MYSQLINSTALLED=
-
+TESTGETERROR=no
 
 getRandPassword
 ADMINPASSWORD=$TEMPRANDSTR
@@ -1187,6 +1187,7 @@ function test_page
 
     if [ $? != 0 ] ; then
         echoR "Error: $PAGENAME failed."
+        TESTGETERROR=yes
     else
         echoG "OK: $PAGENAME passed."
     fi
@@ -1592,6 +1593,12 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     fi
 else
     test_ols
+fi
+
+if [ "x${TESTGETERROR}" = "xyes" ] ; then
+    echoG "Errors were encountered during testing. In many cases these errors can be solved manually by referring to installation logs."
+    echoG "Service loading issues can sometimes be resolved by performing a restart of the web server."
+    echoG "Reinstalling the web server can also help if neither of the above approaches resolve the issue."
 fi
 
 echo
