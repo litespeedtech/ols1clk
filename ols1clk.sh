@@ -590,7 +590,8 @@ END
 
     fi
     if [ "x$OSNAMEVER" = "xCENTOS8" ] ; then
-        service mariadb start
+        systemctl enable mariadb
+        systemctl start  mariadb
     else
         service mysql start
     fi
