@@ -72,12 +72,12 @@ EMAIL=
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
 LSPHPVERLIST=(54 55 56 70 71 72 73)
-MARIADBVERLIST=(10.0 10.1 10.2 10.3)
+MARIADBVERLIST=(10.0 10.1 10.2 10.3 10.4)
 
 #default version
-LSPHPVER=56
+LSPHPVER=73
 USEDEFAULTLSPHP=1
-MARIADBVER=10.3
+MARIADBVER=10.4
 USEDEFAULTLSMARIADB=1
 
 ALLERRORS=0
@@ -580,7 +580,7 @@ END
         if [ $? != 0 ] ; then
             echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
         fi
-
+        apt-get update
         apt-get -y -f --force-yes install mariadb-server
         if [ $? != 0 ] ; then
             echoR "An error occured during installation of MariaDB. Please fix this error and try again."
