@@ -985,7 +985,7 @@ define('WP_ADMIN', true);
 activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
 
 END
-    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
+    $SERVER_ROOT/fcgi-bin/lsphpnew $WORDPRESSPATH/activate_cache.php
     rm $WORDPRESSPATH/activate_cache.php
 }
 
