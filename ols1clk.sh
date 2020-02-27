@@ -783,6 +783,7 @@ function install_ols
         echo "$STATUS on Debian/Ubuntu"
         install_ols_debian $STATUS
     fi
+    killall -9 lsphp
 }
 
 
@@ -1020,6 +1021,7 @@ function uninstall
     if [ "x$OLSINSTALLED" = "x1" ] ; then
         echoY "Uninstalling ..."
         $SERVER_ROOT/bin/lswsctrl stop
+        killall -9 lsphp
         if [ "x$OSNAME" = "xcentos" ] ; then
             echo "Uninstall on Centos"
             uninstall_ols_centos
