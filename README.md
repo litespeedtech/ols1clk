@@ -50,7 +50,6 @@ settings and values.
 * **--wpuser WORDPRESSUSER:** to set the WordPress admin user for WordPress dashboard login. Default value is wpuser.
 * **--wppassword [PASSWORD]:** to set the WordPress admin user password for WordPress dashboard login.
   * If you omit **[PASSWORD]**, ols1clk will prompt you to provide this password during installation.
-* **--sysuser:** the cpanel account user name (where appropriate)
 * **--wplang WORDPRESSLANGUAGE:** to set the WordPress language. Default value is "en" for English.
 * **--sitetitle WORDPRESSSITETITLE:** To set the WordPress site title. Default value is mySite.
 * **--uninstall:** to uninstall OpenLiteSpeed and remove the installation directory.
