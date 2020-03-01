@@ -18,6 +18,7 @@
 ##############################################################################
 
 ###    Author: dxu@litespeedtech.com (David Shue)
+###    ClassicPress parts added by ClassicPress, March 2020
 
 clear
 
@@ -58,11 +59,14 @@ DATABASENAME=olsdbname
 USERNAME=olsdbuser
 
 WORDPRESSPATH=$SERVER_ROOT/wordpress
+CLASSICPRESSPATH=$SERVER_ROOT/classicpress
 WPPORT=80
 SSLWPPORT=443
 
 INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
+INSTALLCLASSICPRESS=0
+INSTALLCLASSICPRESSPLUS=0
 FORCEYES=0
 WPLANGUAGE=en
 WPUSER=wpuser
@@ -437,8 +441,6 @@ function install_wordpress
     fi
 }
 
-
-
 function setup_wordpress
 {
     if [ -e "$WORDPRESSPATH/wp-config-sample.php" ] ; then
@@ -454,6 +456,157 @@ function setup_wordpress
         echoR "WordPress setup failed. File $WORDPRESSPATH/wp-config-sample.php does not exist."
         ALLERRORS=1
     fi
+}
+
+function run_wp_admin
+{
+	echoY "(INFO) RUNNING WORDPRESS ADMIN INSTALL"
+	echo
+	
+    if [ "$WPPORT" != "80" ] ; then
+        INSTALLURL=http://"$SITEDOMAIN":"$WPPORT"/wp-admin/install.php
+    else
+        INSTALLURL=http://"$SITEDOMAIN"/wp-admin/install.php
+    fi
+
+	wget -qO- "$INSTALLURL" >/dev/null 2>&1
+	sleep 5
+
+	echoB "(INFO) WORDPRESS INSTALL WGET STEP 1"
+	wget -qO- --no-check-certificate --post-data "language=$WPLANGUAGE" --referer="$INSTALLURL" "$INSTALLURL"?step=1  >/dev/null 2>&1
+	
+	sleep 2
+	echoB "(INFO) WORDPRESS INSTALL WGET STEP 2"
+	
+	$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
+	sleep 2
+	$SERVER_ROOT/bin/lswsctrl start >/dev/null 2>&1
+	sleep 2
+
+	wget -qO- --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer="$INSTALLURL"?step=1 "$INSTALLURL"?step=2  >/dev/null 2>&1
+
+	activate_cache_wp
+}
+
+function activate_cache_wp
+{
+	echoB "(INFO) WORDPRESS INSTALL ACTIVATE CACHE PLUGIN"
+	echo
+	
+	cat > $WORDPRESSPATH/activate_cache.php <<END
+<?php
+include '$WORDPRESSPATH/wp-load.php';
+include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
+include_once '$WORDPRESSPATH/wp-admin/includes/file.php';
+define('WP_ADMIN', true);
+activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
+
+END
+
+	$SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $WORDPRESSPATH/activate_cache.php
+	rm $WORDPRESSPATH/activate_cache.php
+}
+
+
+function install_classicpress
+{
+	echoY "(INFO) STARTING CLASSICPRESS INSTALL"
+	echo
+	
+    if [ ! -e "$CLASSICPRESSPATH" ] ; then
+        echoO "(INFO) $CLASSICPRESSPATH does not exist. Creating it."
+		local CPDIRNAME
+		local CPBASENAME
+        CPDIRNAME=$(dirname $CLASSICPRESSPATH)
+        CPBASENAME=$(basename $CLASSICPRESSPATH)
+        mkdir -p "$CPDIRNAME"
+		cd "$CPDIRNAME" || exit
+    else
+		echoY "(INFO) Installing ClassicPress to $CLASSICPRESSPATH"
+		cd "$CLASSICPRESSPATH" || exit
+    fi
+	
+
+	wget -q --no-check-certificate https://www.classicpress.net/latest.tar.gz -O classicpress.tar.gz
+	tar -xzvf classicpress.tar.gz --strip-components=1 -C $CLASSICPRESSPATH/ >/dev/null 2>&1
+	rm classicpress.tar.gz
+	
+	if [ "$CPBASENAME" != "classicpress" ] ; then
+		mv classicpress/ "$CPBASENAME"/
+	fi
+
+	wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $CLASSICPRESSPATH/wp-content/plugins/litespeed-cache/
+
+	chown -R --reference=$SERVER_ROOT/autoupdate $CLASSICPRESSPATH/.*
+}
+
+function setup_classicpress
+{
+	echoY "(INFO) SETTING UP CLASSICPRESS"
+	echo
+
+	if [ -e "$CLASSICPRESSPATH/wp-config-sample.php" ] ; then
+		sed -e "s/database_name_here/$DATABASENAME/" -e "s/username_here/$USERNAME/" -e "s/password_here/$USERPASSWORD/" "$CLASSICPRESSPATH/wp-config-sample.php" > "$CLASSICPRESSPATH/wp-config.php"
+		if [ -e "$CLASSICPRESSPATH/wp-config.php" ] ; then
+			chown  -R --reference="$CLASSICPRESSPATH/wp-config-sample.php"   "$CLASSICPRESSPATH/wp-config.php"
+			echoG "Finished setting up ClassicPress."
+		else
+            echoR "(ERROR) ClassicPress setup failed. You may not have sufficient privileges to access $CLASSICPRESSPATH/wp-config.php."
+            ALLERRORS=1
+		fi
+	else
+        echoR "(ERROR) ClassicPress setup failed. File $CLASSICPRESSPATH/wp-config-sample.php does not exist."
+        ALLERRORS=1
+	fi
+}
+
+function run_cp_admin
+{
+	echoY "(INFO) RUNNING CLASSICPRESS ADMIN INSTALL"
+	echo
+
+    if [ "$WPPORT" != "80" ] ; then
+        INSTALLURL=http://$SITEDOMAIN:$WPPORT/wp-admin/install.php
+    else
+        INSTALLURL=http://$SITEDOMAIN/wp-admin/install.php
+    fi
+
+	wget -qO- "$INSTALLURL" >/dev/null 2>&1
+	sleep 5
+
+	echoB "(INFO) CLASSICPRESS INSTALL WGET STEP 1"
+	wget -qO- --no-check-certificate --post-data "language=$WPLANGUAGE" --referer="$INSTALLURL" "$INSTALLURL"?step=1 >/dev/null 2>&1
+	
+	sleep 2
+	echoB "(INFO) CLASSICPRESS INSTALL WGET STEP 2"
+	
+	$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
+	sleep 2
+	$SERVER_ROOT/bin/lswsctrl start >/dev/null 2>&1
+	sleep 2
+
+	wget -qO- --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+ClassicPress&language=$WPLANGUAGE" --referer="$INSTALLURL"?step=1 "$INSTALLURL"?step=2 >/dev/null 2>&1
+
+	activate_cache_cp
+}
+
+function activate_cache_cp
+{
+	echoB "(INFO) CLASSICPRESS INSTALL ACTIVATE CACHE PLUGIN"
+	echo
+
+	cat > $CLASSICPRESSPATH/activate_cache.php <<END
+<?php
+include '$CLASSICPRESSPATH/wp-load.php';
+include_once '$CLASSICPRESSPATH/wp-admin/includes/plugin.php';
+include_once '$CLASSICPRESSPATH/wp-admin/includes/file.php';
+define('WP_ADMIN', true);
+activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
+
+END
+
+	$SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $CLASSICPRESSPATH/activate_cache.php
+	rm $CLASSICPRESSPATH/activate_cache.php
 }
 
 
@@ -483,7 +636,7 @@ function test_mysql_password
                 read answer
                 mysqladmin -uroot -p"$answer" password "$answer"
                 if [ $? = 0 ] ; then
-                    CURROOTPASSWORD="$answer"
+                    CURROOTPASSWORD=$answer
                 else
                     echoR "root password is incorrect. 1 attempt remaining."
                     printf '\033[31mPlease input the current root password:\033[0m'
@@ -696,7 +849,7 @@ function resetmysqlroot
     if [ "x$OSNAMEVER" = "xCENTOS8" ]; then
         MYSQLNAME='mariadb'
     else
-        MYSQLNAME=mysql
+        MYSQLNAME='mysql'
     fi
     service $MYSQLNAME stop
     if [ $? != 0 ] && [ "x$OSNAME" = "xcentos" ] ; then
@@ -867,8 +1020,6 @@ function set_ols_password
     fi
 
 }
-
-
 
 
 function config_server
@@ -1128,21 +1279,26 @@ function usage
 	printf "%-40s | %-124s\n" " " "file by browser to complete WordPress installation."
 	printf "%-40s | %-124s\n" " --wordpressplus SITEDOMAIN" "Automatically installs and configures WordPress with settings provided by you or with default settings."
 	printf "%-40s | %-124s\n" " --wordpresspath WORDPRESSPATH" "Specify a location for the new WordPress installation or use an existing WordPress installation."
+	printf "%-40s | %-124s\n" " --classicpress(-c)" "Install and setup ClassicPress. You will still need to access the /wp-admin/wp-config.php"
+	printf "%-40s | %-124s\n" " " "file by browser to complete ClassicPress installation."
+	printf "%-40s | %-124s\n" " --classicpressplus SITEDOMAIN" "Automatically installs and configures ClassicPress with settings provided by you or with default settings."
+	printf "%-40s | %-124s\n" " --classicpresspath CLASSICPRESSPATH" "Specify a location for the new ClassicPress installation or use an existing ClassicPress installation."
+	printf "%-40s | %-124s\n" " --classicpressuser CLASSICPRESSUSER" "System account username."
 
-	printf "%-40s | %-124s\n" " --dbrootpassword(-r) [DBROOTPASSWORD]" "Set the database root password instead of using a random one."
+	printf "%-40s | %-124s\n" " --dbrootpassword(-r) [ROOTPASSWORD]" "Set the database root password instead of using a random one."
 	printf "%-40s | %-124s\n" " " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
-	printf "%-40s | %-124s\n" " --dbname DATABASENAME" "Set the database name to be used by WordPress"
-	printf "%-40s | %-124s\n" " --dbuser DBUSERNAME" "Set the WordPress username in the database."
-	printf "%-40s | %-124s\n" " --dbpassword [DBUSERPASSWORD]" "Set the WordPress table password in MySQL instead of using a random one."
+	printf "%-40s | %-124s\n" " --dbname DATABASENAME" "Set the database name to be used by WordPress / ClassicPress."
+	printf "%-40s | %-124s\n" " --dbuser DBUSERNAME" "Set the WordPress / ClassicPress username in the database."
+	printf "%-40s | %-124s\n" " --dbpassword [DBUSERPASSWORD]" "Set the WordPress / ClassicPress table password in MySQL instead of using a random one."
 	printf "%-40s | %-124s\n" " " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
 	printf "%-40s | %-124s\n" " --listenport LISTENPORT" "Set the HTTP server listener port, default is 80."
 	printf "%-40s | %-124s\n" " --ssllistenport LISTENPORT" "Set the HTTPS server listener port, default is 443."
 
-	printf "%-40s | %-124s\n" " --wpuser WORDPRESSUSER" "Set the admin user for WordPress dashboard login. Default value is wpuser."
-	printf "%-40s | %-124s\n" " --wppassword [WPPASSWORD]" "Set the admin user password for WordPress dashboard login."
+	printf "%-40s | %-124s\n" " --wpuser WORDPRESSUSER" "Set the admin user for WordPress / ClassicPress dashboard login. Default value is wpuser."
+	printf "%-40s | %-124s\n" " --wppassword [WPPASSWORD]" "Set the admin user password for WordPress / ClassicPress dashboard login."
 	printf "%-40s | %-124s\n" " " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
-	printf "%-40s | %-124s\n" " --wplang WORDPRESSLANGUAGE" "Set the WordPress language. Default value is \"en\" for English."
-	printf "%-40s | %-124s\n" " --sitetitle WORDPRESSSITETITLE" "Set the WordPress site title. Default value is \"WELCOME TO MY SITE\""
+	printf "%-40s | %-124s\n" " --wplang WORDPRESSLANGUAGE" "Set the WordPress / ClassicPress language. Default value is \"en\" for English."
+	printf "%-40s | %-124s\n" " --sitetitle WORDPRESSSITETITLE" "Set the WordPress / ClassicPress site title. Default value is \"WELCOME TO MY SITE\""
 
 	printf "%-40s | %-124s\n" " --uninstall" "Uninstall OpenLiteSpeed and remove installation directory."
 	printf "%-40s | %-124s\n" " --purgeall" "Uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL."
@@ -1157,6 +1313,7 @@ function usage
 	printf "%-40s | %-124s\n" "./ols1clk.sh --lsphp 72" "Install OpenLiteSpeed with lsphp72."
 	printf "%-40s | %-124s\n" "./ols1clk.sh -a 123456 -e a@cc.com" "Install OpenLiteSpeed with WebAdmin password  \"123456\" and email a@cc.com."
 	printf "%-40s | %-124s\n" "./ols1clk.sh -r 123456 -w" "Install OpenLiteSpeed with WordPress and MySQL root password \"123456\"."
+	printf "%-52s | %-74s\n" "./ols1clk.sh -a 123 -r 1234 --classicpressplus a.com"  "Install OpenLiteSpeed and  ClassicPress installation at \"a.com\", WebAdmin password \"123\", MySQL root password \"1234\"."
 	printf "%-69s | %-106s\n" "./ols1clk.sh -a 123 -r 1234 --wordpressplus b.com  --sitetitle mySite"  "Install OpenLiteSpeed and WordPress at \"b.com\", WebAdmin password \"123\","
 	printf "%-69s | %-106s\n" " " "MySQL root password \"1234\", and WordPress site title \"mySite\"."
 	printf "%-69s | %-96s\n" "./ols1clk.sh -a 123X -r 1234y --wplang zh_CN --wordpressplus abc.com"  "Install OpenLiteSpeed and WordPress set to Chinese (China) language at \"abc.com\","
@@ -1223,6 +1380,38 @@ function test_wordpress_plus
     test_page http://localhost:8088/  Congratulation "test Example vhost page"
     test_page http://"$SITEDOMAIN":"$WPPORT"/ hello-world "test wordpress HTTP first page"
     test_page https://"$SITEDOMAIN":"$SSLWPPORT"/ hello-world "test wordpress HTTPS first page"
+}
+
+
+# Can't install OLS if cPanel installed
+function check_cpanel_installed
+{
+	if [ -f /usr/local/cpanel/scripts/wwwacct ] ; then
+        echoR "Sorry, OpenLiteSpeed cannot be installed if cPanel is installed."
+        echo
+        exit 1
+	fi
+}
+
+# Can't install WP and CP. One or the other.
+function check_wp_and_cp_install
+{
+	if [ "$INSTALLWORDPRESS" = "1" ] && [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+		echoR "(ERROR) You cannot install WordPress and ClassicPress at the same time. You must choose one or the other."
+		echo
+		echoR "You must use '-w | --wordpress', '--wordpressplus' and '--wordpresspath' separately to '-c | --classicpress', '--classicpressplus' and '--classicpresspath'"
+		echo
+		printf "Do you want to see the usage instructions.[Y/n]"
+		read answer
+		echo
+		
+		if [ "$answer" = "Y" ] || [ "$answer" = "y" ] ; then
+			usage
+			exit 0
+		fi
+		echo
+		exit
+	fi
 }
 
 
@@ -1484,6 +1673,43 @@ else
     echoY "Server HTTPS port:        " "$SSLWPPORT"
 fi
 
+CLASSICPRESSINSTALLED=
+if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+	echoY "Install ClassicPress:     " Yes
+	echoY "ClassicPress HTTP port:   " "$WPPORT"
+	echoY "ClassicPress HTTPS port:  " "$SSLWPPORT"
+	echoY "Web site domain:          " "$SITEDOMAIN"
+	echoY "MySQL root Password:      " "$ROOTPASSWORD"
+	echoY "Database name:            " "$DATABASENAME"
+	echoY "Database username:        " "$USERNAME"
+	echoY "Database password:        " "$USERPASSWORD"
+
+	if [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then
+		echoY "ClassicPress plus:           " Yes
+		echoY "ClassicPress language:       " "$WPLANGUAGE"
+		echoY "ClassicPress site title:     " "$WPTITLE"
+		echoY "ClassicPress username:       " "$WPUSER"
+		echoY "ClassicPress password:       " "$WPPASSWORD"
+	else
+		echoY "ClassicPress plus:           " No
+	fi
+
+	if [ -e "$CLASSICPRESSPATH/wp-config.php" ] ; then
+		echoY "ClassicPress location:       " "$CLASSICPRESSPATH (Existing)"
+		CLASSICPRESSINSTALLED=1
+	else
+		echoY "ClassicPress location:       " "$CLASSICPRESSPATH (New install)"
+		CLASSICPRESSINSTALLED=0
+	fi
+	
+	if [ "$CPANELINSTALLED" = "1" ] ; then
+		echoY "cPanel user:                 " "$SYSUSER"
+	fi
+else
+	echoY "Server HTTP port:         " "$WPPORT"
+	echoY "Server HTTPS port:        " "$SSLWPPORT"
+fi
+
 echo
 
 if [ "x$FORCEYES" != "x1" ] ; then
@@ -1500,116 +1726,145 @@ fi
 
 
 ####begin here#####
+check_cpanel_installed
+check_wp_and_cp_install
 update_centos_hashlib
+
+# Is wget installed?
 check_wget
+
+# Begin OLS install
 install_ols
 
 #write the password file for record and remove the previous file.
 echo "WebAdmin username is [admin], password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
 
-
+# Set OLS WebAdmin password
 set_ols_password
+
+# Get self-signed certificate
 gen_selfsigned_cert
 
-if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-    if [ "x$MYSQLINSTALLED" != "x1" ] ; then
-        install_mysql
-    else
-        test_mysql_password
-    fi
+if [ "$INSTALLWORDPRESS" = "1" ] || [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+	if [ "$MYSQLINSTALLED" != "1" ] ; then
+		install_mysql
+	else
+		test_mysql_password
+	fi
 
-    if [ "x$WORDPRESSINSTALLED" != "x1" ] ; then
-        install_wordpress
-        setup_wordpress
+	if [ "$WORDPRESSINSTALLED" != "1" ] &&  [ "$CLASSICPRESSINSTALLED" != "1" ] ; then
+		if [ "$INSTALLWORDPRESS" = "1" ] ; then
+			install_wordpress
+			setup_wordpress
+		fi
 
-        if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
-            echoY "MySQL setup bypassed, can not get root password."
-        else
-            ROOTPASSWORD=$CURROOTPASSWORD
-            setup_mysql
-        fi
-    fi
+		if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+			install_classicpress
+			setup_classicpress
+		fi
 
-    config_server_wp
-    echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
+		if [ "$TESTPASSWORDERROR" = "1" ] ; then
+			echoO "(INFO) MySQL setup bypassed, cannot get root password."
+		else
+			ROOTPASSWORD=$CURROOTPASSWORD
+			setup_mysql
+		fi
+	fi
+	
+	if [ "$INSTALLWORDPRESS" = "1" ] ; then
+		config_server_wp
+	fi
+	if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+		config_server_cp
+	fi
+
+	echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
 else
-    #normal ols installation without wordpress
-    config_server
-
+	#Just install OLS without WordPress or ClassicPress
+	config_server
 fi
 
+
+# Run wp-admin/install.php for WP and CP installations
+if [ "$INSTALLWORDPRESSPLUS" = "1" ] || [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then
+	if [ "$INSTALLWORDPRESS" = "1" ] ; then
+		run_wp_admin
+	fi
+	
+	if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+		run_cp_admin
+	fi
+
+	echo "Site administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
+	chmod 600 "$SERVER_ROOT/password"
+	echoY "(INFO) Please be aware that your password was written to file '$SERVER_ROOT/password'."
+fi
+
+
+
+# kill any processes running on port 80
 if [ "x$WPPORT" = "x80" ] ; then
     echoY "Trying to stop some web servers that may be using port 80."
-    killall -9 apache  >/dev/null 2>&1
+    killall -9 apache   >/dev/null 2>&1
     killall -9 apache2  >/dev/null 2>&1
     killall -9 httpd    >/dev/null 2>&1
     killall -9 nginx    >/dev/null 2>&1
 fi
 
-echo ols1clk > "$SERVER_ROOT/PLAT"
-$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
-$SERVER_ROOT/bin/lswsctrl start
 
-
-if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
-    if [ "x$WPPORT" != "x80" ] ; then
-        INSTALLURL=http://$SITEDOMAIN:$WPPORT/wp-admin/install.php
-    else
-        INSTALLURL=http://$SITEDOMAIN/wp-admin/install.php
-    fi
-
-    wget $INSTALLURL >/dev/null 2>&1
-    sleep 5
-
-    #echo "wget --post-data 'language=$WPLANGUAGE' --referer=$INSTALLURL $INSTALLURL?step=1"
-    wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1 >/dev/null 2>&1
-    sleep 1
-
-    #echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
-    wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
-
-    activate_cache
-
-    echo "WordPress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
-fi
-
-chmod 600 "$SERVER_ROOT/password"
-echoY "Please be aware that your password was written to file '$SERVER_ROOT/password'."
-
-if [ "x$ALLERRORS" = "x0" ] ; then
-    echoG "Congratulations! Installation finished."
+# Did OLS install OK?
+if [ "$ALLERRORS" = "0" ] ; then
+	echoG "(SUCCESS) OLS HAS BEEN INSTALLED."
 else
-    echoY "Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
+	echoO "(INFO) Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
 fi
 
-if [ "x$INSTALLWORDPRESSPLUS" = "x0" ] && [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-    echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
-    echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
+
+if [ "$INSTALLWORDPRESSPLUS" = "0" ] && [ "$INSTALLWORDPRESS" = "1" ] ; then
+	echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
+	echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
+fi
+if [ "$INSTALLCLASSICPRESS" = "0" ] && [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+	echoG "Please access http://localhost:$WPPORT/ to finish setting up your ClassicPress site."
+	echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
 fi
 
+
+# Do some testing to see if the installation has completed successfully
 echo
-echoY "Testing ..."
+echoY "(INFO) Testing ..."
 test_ols_admin
-if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
-    if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
-        test_wordpress_plus
-    else
-        test_wordpress
-    fi
+if [ "$INSTALLWORDPRESS" = "1" ] || [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+	if [ "$INSTALLWORDPRESS" = "1" ] ; then
+		if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then
+			test_wordpress_plus
+		else
+			test_wordpress
+		fi
+	fi
+	
+	if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+		if [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then
+			test_classicpress_plus
+		else
+			test_classicpress
+		fi
+	fi
 else
-    test_ols
+	test_ols
 fi
 
-if [ "x${TESTGETERROR}" = "xyes" ] ; then
-    echoG "Errors were encountered during testing. In many cases these errors can be solved manually by referring to installation logs."
-    echoG "Service loading issues can sometimes be resolved by performing a restart of the web server."
-    echoG "Reinstalling the web server can also help if neither of the above approaches resolve the issue."
+# Did we get any errors during WP or CP install?
+if [ "${TESTGETERROR}" = "yes" ] ; then
+	echoR "(ERROR) Errors were encountered during testing."
+	echoO "In many cases these errors can be solved manually by referring to installation logs."
+	echoO "Service loading issues can sometimes be resolved by performing a restart of the web server."
+	echoO "Reinstalling the web server can also help if neither of the above approaches resolve the issue."
 fi
 
 echo
-echoG "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
-echoG "If you have an existing certificate and private key for your site, you will need to replace the $KEY and $CERT in $SERVER_ROOT/conf with these files."
-echoG 'Thanks for using "OpenLiteSpeed One click installation".'
-echoG "Enjoy!"
+echo "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
+echo "If you have an existing certificate and private key for your site, you will need to replace the $KEY and $CERT in $SERVER_ROOT/conf with these files."
+echo 'Thanks for using "OpenLiteSpeed One click installation".'
 echo
 echo
