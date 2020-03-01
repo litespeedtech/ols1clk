@@ -18,7 +18,7 @@
 ##############################################################################
 
 ###    Author: dxu@litespeedtech.com (David Shue)
-###    ClassicPress parts added by ClassicPress, March 2020
+###    ClassicPress parts added by ClassicPress (www.classicpress.net), March 2020
 
 clear
 
