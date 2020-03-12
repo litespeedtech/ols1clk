@@ -1941,6 +1941,8 @@ if [ "x$WPPORT" = "x80" ] ; then
 fi
 
 
+echo ols1clk > "$SERVER_ROOT/PLAT"
+
 # Did OLS install OK?
 if [ "$ALLERRORS" = "0" ] ; then
 	echoG "(SUCCESS) OLS HAS BEEN INSTALLED."
