@@ -465,7 +465,7 @@ function run_wp_admin
 	echoY "[INFO] RUNNING WORDPRESS ADMIN INSTALL"
 	echo
 	
-    if [ "$WPPORT" != "80" ] ; then
+    if [ "x$WPPORT" != "x80" ] ; then
         INSTALLURL=http://"$SITEDOMAIN":"$WPPORT"/wp-admin/install.php
     else
         INSTALLURL=http://"$SITEDOMAIN"/wp-admin/install.php
@@ -475,17 +475,12 @@ function run_wp_admin
 	sleep 5
 
 	echoB "[INFO] WORDPRESS INSTALL WGET STEP 1"
-	wget -qO- --no-check-certificate --post-data "language=$WPLANGUAGE" --referer="$INSTALLURL" "$INSTALLURL"?step=1  >/dev/null 2>&1
+	wget -qO- --no-check-certificate --post-data "language=$WPLANGUAGE" --referer="$INSTALLURL" "${INSTALLURL}?step=1"  >/dev/null 2>&1
 	
 	sleep 2
 	echoB "[INFO] WORDPRESS INSTALL WGET STEP 2"
 	
-	$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
-	sleep 2
-	$SERVER_ROOT/bin/lswsctrl start >/dev/null 2>&1
-	sleep 2
-
-	wget -qO- --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer="$INSTALLURL"?step=1 "$INSTALLURL"?step=2  >/dev/null 2>&1
+	wget -qO- --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer="${INSTALLURL}?step=1" "${INSTALLURL}?step=2"  >/dev/null 2>&1
 
 	activate_cache_wp
 }
@@ -568,17 +563,12 @@ function run_cp_admin
 	sleep 5
 
 	echoB "[INFO] CLASSICPRESS INSTALL STEP 1"
-	wget -qO- --no-check-certificate --post-data "language=$WPLANGUAGE" --referer="$INSTALLURL" "$INSTALLURL"?step=1 >/dev/null 2>&1
+	wget -qO- --no-check-certificate --post-data "language=$WPLANGUAGE" --referer="$INSTALLURL" "${INSTALLURL}?step=1" >/dev/null 2>&1
 	
 	sleep 2
 	echoB "[INFO] CLASSICPRESS INSTALL STEP 2"
 	
-	$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
-	sleep 2
-	$SERVER_ROOT/bin/lswsctrl start >/dev/null 2>&1
-	sleep 2
-
-	wget -qO- --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+ClassicPress&language=$WPLANGUAGE" --referer="$INSTALLURL"?step=1 "$INSTALLURL"?step=2 >/dev/null 2>&1
+	wget -qO- --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+ClassicPress&language=$WPLANGUAGE" --referer="${INSTALLURL}?step=1" "${INSTALLURL}?step=2" >/dev/null 2>&1
 
 	activate_cache_cp
 }
@@ -621,21 +611,21 @@ function test_mysql_password
             printf '\033[31mPlease input the current root password:\033[0m'
             read -r answer
             mysqladmin -uroot -p"$answer" password "$answer"
-            if ! mysqladmin -uroot -p"$answer" password "$answer"
+            if mysqladmin -uroot -p"$answer" password "$answer"
 			then
                 CURROOTPASSWORD=$answer
             else
                 echoR "root password is incorrect. 2 attempts remaining."
                 printf '\033[31mPlease input the current root password:\033[0m'
                 read -r answer
-                if ! mysqladmin -uroot -p"$answer" password "$answer"
+                if mysqladmin -uroot -p"$answer" password "$answer"
 				then
                     CURROOTPASSWORD=$answer
                 else
                     echoR "root password is incorrect. 1 attempt remaining."
                     printf '\033[31mPlease input the current root password:\033[0m'
                     read -r answer
-                    if ! mysqladmin -uroot -p"$answer" password "$answer"
+                    if mysqladmin -uroot -p"$answer" password "$answer"
 					then
                         CURROOTPASSWORD=$answer
                     else
@@ -748,13 +738,13 @@ END
     mysql -uroot -e "flush privileges;"
     #service mysql restart
 
-    if ! mysqladmin -uroot password "$ROOTPASSWORD"
+    if mysqladmin -uroot password "$ROOTPASSWORD"
 	then
         echoG "MySQL root password set to $ROOTPASSWORD"
         CURROOTPASSWORD=$ROOTPASSWORD
     else
         #test it is the current password
-        if ! mysqladmin -uroot -p"$ROOTPASSWORD" password "$ROOTPASSWORD"
+        if mysqladmin -uroot -p"$ROOTPASSWORD" password "$ROOTPASSWORD"
 		then
             echoG "MySQL root password is $ROOTPASSWORD"
             CURROOTPASSWORD=$ROOTPASSWORD
@@ -783,8 +773,7 @@ END
                     echoG "OK, MySQL root password not changed."
                     ROOTPASSWORD=$CURROOTPASSWORD
                 else
-                    mysqladmin -uroot -p"$CURROOTPASSWORD" password "$ROOTPASSWORD"
-                    if ! mysqladmin -uroot -p"$CURROOTPASSWORD" password "$ROOTPASSWORD"
+                    if mysqladmin -uroot -p"$CURROOTPASSWORD" password "$ROOTPASSWORD"
 					then
                         echoG "OK, MySQL root password changed to $ROOTPASSWORD."
                     else
@@ -804,11 +793,11 @@ function setup_mysql
     #delete user if exists because I need to set the password
     mysql -uroot -p"$ROOTPASSWORD"  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';"
 
-    echo "mysql -uroot -p$ROOTPASSWORD -e \"SELECT user FROM mysql.user\"" | grep "$USERNAME" >/dev/null
+    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" >/dev/null
     if [ $? = 0 ] ; then
         echoG "user $USERNAME exists in mysql.user"
     else
-        if ! mysql -uroot -p"$ROOTPASSWORD"  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';"
+        if mysql -uroot -p"$ROOTPASSWORD"  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';"
 		then
             mysql -uroot -p"$ROOTPASSWORD"  -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
         else
@@ -1393,10 +1382,6 @@ function uninstall_warn
 
 function test_page
 {
-	/usr/local/lsws/bin/lswsctrl stop >/dev/null 2>&1
-	sleep 1
-	/usr/local/lsws/bin/lswsctrl start >/dev/null 2>&1
-
 	local URL=$1
 	local KEYWORD=$2
 	local PAGENAME=$3
@@ -1739,7 +1724,7 @@ if [ "x$USEDEFAULTLSPHP" = "x1" ] ; then
         LSPHPVER=56
     fi
     if [ "x$INSTALLCLASSICPRESS" = "x1" ] && [ -e "$CLASSICPRESSPATH/wp-config.php" ] ; then
-        #For existing classicpress, choose lsphp56 as default
+        #For existing classicpress, choose lsphp72 as default
         LSPHPVER=72
     fi
 fi
@@ -1877,13 +1862,13 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] || [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
         test_mysql_password
     fi
 
-    if [ "$WORDPRESSINSTALLED" != "1" ] &&  [ "$CLASSICPRESSINSTALLED" != "1" ] ; then
-		if [ "$INSTALLWORDPRESS" = "1" ] ; then
+    if [ "x$WORDPRESSINSTALLED" != "x1" ] &&  [ "x$CLASSICPRESSINSTALLED" != "x1" ] ; then
+		if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
 			install_wordpress
 			setup_wordpress
 		fi
 		
-		if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+		if [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
 			install_classicpress
 			setup_classicpress
 		fi
@@ -1896,10 +1881,10 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] || [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
         fi
     fi
 
-	if [ "$INSTALLWORDPRESS" = "1" ] ; then
+	if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
 		config_server_wp
 	fi
-	if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+	if [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
 		config_server_cp
 	fi
 
@@ -1908,28 +1893,6 @@ else
     #normal ols installation without wordpress or classicpress
     config_server
 fi
-
-
-# Run wp-admin/install.php for WP and CP installations
-if [ "$INSTALLWORDPRESSPLUS" = "1" ] || [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then
-	if [ "$INSTALLWORDPRESS" = "1" ] ; then
-		run_wp_admin
-	fi
-	
-	if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
-		run_cp_admin
-	fi
-
-	echo "Site administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
-	chmod 600 "$SERVER_ROOT/password"
-	echoY "[INFO] Please be aware that your password was written to file '$SERVER_ROOT/password'."
-	
-	# Start / restart firewall daemon
-	systemctl restart firewalld
-	systemctl start firewalld
-fi
-
-
 
 # kill any processes running on port 80
 if [ "x$WPPORT" = "x80" ] ; then
@@ -1942,20 +1905,41 @@ fi
 
 
 echo ols1clk > "$SERVER_ROOT/PLAT"
+$SERVER_ROOT/bin/lswsctrl stop >/dev/null 2>&1
+$SERVER_ROOT/bin/lswsctrl start
+
+# Run wp-admin/install.php for WP and CP installations
+if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] || [ "x$INSTALLCLASSICPRESSPLUS" = "x1" ] ; then
+	if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
+		run_wp_admin
+	fi
+	
+	if [ "x$INSTALLCLASSICPRESSPLUS" = "x1" ] ; then
+		run_cp_admin
+	fi
+
+	echo "Site administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
+	chmod 600 "$SERVER_ROOT/password"
+	echoY "[INFO] Please be aware that your password was written to file '$SERVER_ROOT/password'."
+	
+	# Start / restart firewall daemon
+	systemctl restart firewalld
+	systemctl start firewalld
+fi
 
 # Did OLS install OK?
-if [ "$ALLERRORS" = "0" ] ; then
+if [ "x$ALLERRORS" = "x0" ] ; then
 	echoG "(SUCCESS) OLS HAS BEEN INSTALLED."
 else
 	echoO "[INFO] Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
 fi
 
 
-if [ "$INSTALLWORDPRESSPLUS" = "0" ] && [ "$INSTALLWORDPRESS" = "1" ] ; then
+if [ "x$INSTALLWORDPRESSPLUS" = "x0" ] && [ "x$INSTALLWORDPRESS" = "x1" ] ; then
 	echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
 	echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
 fi
-if [ "$INSTALLCLASSICPRESS" = "0" ] && [ "$INSTALLCLASSICPRESS" = "1" ] ; then
+if [ "x$INSTALLCLASSICPRESSPLUS" = "x0" ] && [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
 	echoG "Please access http://localhost:$WPPORT/ to finish setting up your ClassicPress site."
 	echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
 fi
@@ -1965,17 +1949,17 @@ fi
 echo
 echoY "[INFO] Testing ..."
 test_ols_admin
-if [ "$INSTALLWORDPRESS" = "1" ] || [ "$INSTALLCLASSICPRESS" = "1" ] ; then
-	if [ "$INSTALLWORDPRESS" = "1" ] ; then
-		if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then
+if [ "x$INSTALLWORDPRESS" = "x1" ] || [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
+	if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+		if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
 			test_wordpress_plus
 		else
 			test_wordpress
 		fi
 	fi
 	
-	if [ "$INSTALLCLASSICPRESS" = "1" ] ; then
-		if [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then
+	if [ "x$INSTALLCLASSICPRESS" = "x1" ] ; then
+		if [ "x$INSTALLCLASSICPRESSPLUS" = "x1" ] ; then
 			test_classicpress_plus
 		else
 			test_classicpress
@@ -1986,7 +1970,7 @@ else
 fi
 
 # Did we get any errors during WP or CP install?
-if [ "${TESTGETERROR}" = "yes" ] ; then
+if [ "x${TESTGETERROR}" = "xyes" ] ; then
 	echoR "[ERROR] Errors were encountered during testing."
 	echoO "In many cases these errors can be solved manually by referring to installation logs."
 	echoO "Service loading issues can sometimes be resolved by performing a restart of the web server."
@@ -1994,9 +1978,10 @@ if [ "${TESTGETERROR}" = "yes" ] ; then
 fi
 
 echo
-echo "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
-echo "If you have an existing certificate and private key for your site, you will need to replace the $KEY and $CERT in $SERVER_ROOT/conf with these files."
-echo 'Thanks for using "OpenLiteSpeed One click installation".'
+echoG "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
+echoG "If you have an existing certificate and private key for your site, you will need to replace the $KEY and $CERT in $SERVER_ROOT/conf with these files."
+echoG 'Thanks for using "OpenLiteSpeed One click installation".'
+echoG 'Enjoy!'
 echo
 echo
 
