@@ -8,7 +8,7 @@ matrix:
       dist: xenial
     - os: linux 
       dist: trusty
-  
+    - os: osx 
 
 notifications:
   email:
