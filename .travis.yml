@@ -17,7 +17,4 @@ notifications:
     on_failure: always
 
 script:
-  - sudo apt-get remove --purge mysql* -y
-  - sudo su -c "bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/wpimgsetup.sh )"
-  - sudo su -c "bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Cloud-init/per-instance.sh )"
-  - curl -s http://127.0.0.1/ | grep 'OpenLiteSpeed WordPress One-Click'
+  - sudo su -c "bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) --lsphp 73"
