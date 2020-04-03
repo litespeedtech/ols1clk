@@ -17,4 +17,6 @@ notifications:
     on_failure: always
 
 script:
-  - sudo su -c "echo 'Y' | bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) --lsphp 73"
+  - wget https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
+  - chmod +x ols1clk.sh
+  - echo 'Y' | bash ols1clk.sh --lsphp 73
