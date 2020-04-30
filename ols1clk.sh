@@ -197,6 +197,15 @@ function check_os
                     OSNAME=ubuntu
                     OSVER=bionic
                     MARIADBCPUARCH="arch=amd64"
+                    
+                else
+                    cat /etc/lsb-release | grep "DISTRIB_RELEASE=20." >/dev/null
+                    if [ $? = 0 ] ; then
+                        OSNAMEVER=UBUNTU20
+                        OSNAME=ubuntu
+                        OSVER=focal
+                        MARIADBCPUARCH="arch=amd64"
+                    fi
                 fi
             fi
         fi
@@ -235,7 +244,7 @@ function check_os
     fi
 
     if [ "x$OSNAMEVER" = "x" ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18)."
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18,20)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         echo
@@ -704,6 +713,9 @@ END
         elif [ "x$OSNAMEVER" = "xUBUNTU18" ] ; then
             apt-get -y -f  install software-properties-common
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
+        elif [ "x$OSNAMEVER" = "xUBUNTU20" ] ; then
+            apt-get -y -f install software-properties-common
+            apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8    
         fi
 
         grep -Fq  "http://mirror.jaleco.com/mariadb/repo/" /etc/apt/sources.list.d/mariadb_repo.list
@@ -1683,8 +1695,7 @@ then
 	do_remove_or_purge
 fi
 
-
-if [ "x$OSNAMEVER" = "xUBUNTU18" ] || [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
+if [ "x$OSNAMEVER" = "xUBUNTU20" ] || [ "x$OSNAMEVER" = "xUBUNTU18" ] || [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
     if [ "x$LSPHPVER" = "x54" ] || [ "x$LSPHPVER" = "x55" ] || [ "x$LSPHPVER" = "x56" ] ; then
        echoY "We do not support lsphp$LSPHPVER on $OSNAMEVER, lsphp71 will be used instead."
        LSPHPVER=71
