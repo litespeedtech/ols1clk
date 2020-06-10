@@ -71,7 +71,7 @@ EMAIL=
 
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
-LSPHPVERLIST=(54 55 56 70 71 72 73)
+LSPHPVERLIST=(54 55 56 70 71 72 73 74)
 MARIADBVERLIST=(10.0 10.1 10.2 10.3 10.4)
 
 #default version
