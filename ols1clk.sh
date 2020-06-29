@@ -314,6 +314,9 @@ function install_ols_centos
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        
+        #fix lsphp 73 to current version
+        sed -i -e "s/lsphp73\/bin\/lsphp/lsphp$LSPHPVER\/bin\/lsphp/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -392,6 +395,9 @@ function install_ols_debian
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        
+        #fix lsphp 73 to current version
+        sed -i -e "s/lsphp73\/bin\/lsphp/lsphp$LSPHPVER\/bin\/lsphp/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
