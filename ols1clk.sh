@@ -844,29 +844,31 @@ function gen_selfsigned_cert
         SSL_EMAIL=.
     fi
 
-
-# Create the certificate signing request
-    openssl req -new -passin pass:password -passout pass:password -out $CSR <<EOF
-${SSL_COUNTRY}
-${SSL_STATE}
-${SSL_LOCALITY}
-${SSL_ORG}
-${SSL_ORGUNIT}
-${SSL_HOSTNAME}
-${SSL_EMAIL}
-.
-.
+    
+    
+    COMMNAME=`hostname`
+    
+    cat << EOF > $CSR
+[req]
+prompt=no
+distinguished_name=openlitespeed
+[openlitespeed]
+commonName = ${COMMNAME}
+countryName = ${SSL_COUNTRY}
+localityName = ${SSL_LOCALITY}
+organizationName = ${SSL_ORG}
+organizationalUnitName = ${SSL_ORGUNIT}
+stateOrProvinceName = ${SSL_STATE}
+emailAddress = ${SSL_EMAIL}
+name = openlitespeed
+initials = CP
+dnQualifier = openlitespeed
+[server_exts]
+extendedKeyUsage=1.3.6.1.5.5.7.3.1
 EOF
-    echo ""
-
-    [ -f ${CSR} ] && openssl req -text -noout -in ${CSR}
-    echo ""
-
-# Create the Key
-    openssl rsa -in privkey.pem -passin pass:password -passout pass:password -out ${KEY}
-# Create the Certificate
-    openssl x509 -in ${CSR} -out ${CERT} -req -signkey ${KEY} -days 1000
-
+    openssl req -x509 -config $CSR -extensions 'server_exts' -nodes -days 820 -newkey rsa:2048 -keyout ${KEY} -out ${CERT}
+    rm -f $CSR
+    
     mv ${KEY}   $SERVER_ROOT/conf/$KEY
     mv ${CERT}  $SERVER_ROOT/conf/$CERT
     chmod 0600 $SERVER_ROOT/conf/$KEY
