@@ -574,9 +574,11 @@ END
             apt-get -y -f install software-properties-common
             apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
         elif [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
-            apt-get -y -f install software-properties-common
+            apt-get -y -f install software-properties-common gnupg
             apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
-
+        elif [ "x$OSNAMEVER" = "xDEBIAN10" ] ; then
+            apt-get -y -f install software-properties-common gnupg
+            apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
         elif [ "x$OSNAMEVER" = "xUBUNTU12" ] ; then
             apt-get -y -f install python-software-properties
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
