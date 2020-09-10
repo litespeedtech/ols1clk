@@ -484,7 +484,7 @@ function test_mysql_password
     CURROOTPASSWORD=$ROOTPASSWORD
     TESTPASSWORDERROR=0
 
-    mysqladmin -uroot -p$CURROOTPASSWORD 2>/dev/null
+    mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
     if [ $? != 0 ] ; then
         #Sometimes, mysql will treat the password error and restart will fix it.
         service mysql restart
@@ -492,25 +492,25 @@ function test_mysql_password
             service mysqld restart
         fi
 
-        mysqladmin -uroot -p$CURROOTPASSWORD 2>/dev/null
+        mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
         if [ $? != 0 ] ; then
             printf '\033[31mPlease input the current root password:\033[0m'
             read answer
-            mysqladmin -uroot -p$answer
+            mysqladmin -uroot -p$answer password $answer
             if [ $? = 0 ] ; then
                 CURROOTPASSWORD=$answer
             else
                 echoR "root password is incorrect. 2 attempts remaining."
                 printf '\033[31mPlease input the current root password:\033[0m'
                 read answer
-                mysqladmin -uroot -p$answer 2>/dev/null
+                mysqladmin -uroot -p$answer password $answer
                 if [ $? = 0 ] ; then
                     CURROOTPASSWORD=$answer
                 else
                     echoR "root password is incorrect. 1 attempt remaining."
                     printf '\033[31mPlease input the current root password:\033[0m'
                     read answer
-                    mysqladmin -uroot -p$answer 2>/dev/null
+                    mysqladmin -uroot -p$answer password $answer
                     if [ $? = 0 ] ; then
                         CURROOTPASSWORD=$answer
                     else
