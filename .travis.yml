@@ -8,7 +8,6 @@ matrix:
       dist: xenial
     - os: linux 
       dist: trusty
-#    - os: osx 
 
 notifications:
   email:
@@ -18,4 +17,4 @@ notifications:
 script:
   - wget https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
   - sudo chmod +x ols1clk.sh
-  - echo 'Y' | sudo bash ols1clk.sh --lsphp 73
+  - echo 'Y' | sudo bash ols1clk.sh --lsphp 74 --wordpress
