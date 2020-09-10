@@ -15,6 +15,6 @@ notifications:
     on_failure: always
 
 script:
-  - wget https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh
+  - wget https://raw.githubusercontent.com/Code-Egg/ols1clk/master/ols1clk.sh
   - sudo chmod +x ols1clk.sh
   - echo 'Y' | sudo bash -x ols1clk.sh --lsphp 74 --wordpress
