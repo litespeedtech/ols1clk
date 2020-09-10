@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2019 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2020 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -71,11 +71,11 @@ EMAIL=
 
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
-LSPHPVERLIST=(54 55 56 70 71 72 73)
+LSPHPVERLIST=(54 55 56 70 71 72 73 74)
 MARIADBVERLIST=(10.0 10.1 10.2 10.3 10.4)
 
 #default version
-LSPHPVER=73
+LSPHPVER=74
 USEDEFAULTLSPHP=1
 MARIADBVER=10.4
 USEDEFAULTLSMARIADB=1
@@ -145,8 +145,8 @@ function check_wget
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 2.1                      *'
-    echoY '*                    Copyright (C) 2016 - 2019 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Open LiteSpeed One click installation, Version 2.2                      *'
+    echoY '*                    Copyright (C) 2016 - 2020 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -201,6 +201,15 @@ function check_os
                     OSNAME=ubuntu
                     OSVER=bionic
                     MARIADBCPUARCH="arch=amd64"
+                    
+                else
+                    cat /etc/lsb-release | grep "DISTRIB_RELEASE=20." >/dev/null
+                    if [ $? = 0 ] ; then
+                        OSNAMEVER=UBUNTU20
+                        OSNAME=ubuntu
+                        OSVER=focal
+                        MARIADBCPUARCH="arch=amd64"
+                    fi
                 fi
             fi
         fi
@@ -239,7 +248,7 @@ function check_os
     fi
 
     if [ "x$OSNAMEVER" = "x" ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18)."
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18,20)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         echo
@@ -273,7 +282,7 @@ function install_ols_centos
     fi
 
     local JSON=
-    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] || [ "x$LSPHPVER" = "x73" ] ; then
+    if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] || [ "x$LSPHPVER" = "x73" ] || [ "x$LSPHPVER" = "x74" ] ; then
         JSON=lsphp$LSPHPVER-json
     fi
 
@@ -305,6 +314,9 @@ function install_ols_centos
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        
+        #fix lsphp 73 to current version
+        sed -i -e "s/lsphp73\/bin\/lsphp/lsphp$LSPHPVER\/bin\/lsphp/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -324,7 +336,7 @@ function uninstall_ols_centos
         echoY "The installed LSPHP version is $LSPHPVER"
 
         local JSON=
-        if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] || [ "x$LSPHPVER" = "x73" ] ; then
+        if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] || [ "x$LSPHPVER" = "x73" ] || [ "x$LSPHPVER" = "x74" ] ; then
             JSON=lsphp$LSPHPVER-json
         fi
 
@@ -371,7 +383,7 @@ function install_ols_debian
     apt-get -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap lsphp$LSPHPVER-curl
 
 
-    if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] && [ "x$LSPHPVER" != "x72" ]  && [ "x$LSPHPVER" != "x73" ] ; then
+    if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] && [ "x$LSPHPVER" != "x72" ]  && [ "x$LSPHPVER" != "x73" ] && [ "x$LSPHPVER" != "x74" ] ; then
         apt-get -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
     else
        apt-get -y install $action lsphp$LSPHPVER-common lsphp$LSPHPVER-json
@@ -383,6 +395,9 @@ function install_ols_debian
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+        
+        #fix lsphp 73 to current version
+        sed -i -e "s/lsphp73\/bin\/lsphp/lsphp$LSPHPVER\/bin\/lsphp/g" "$SERVER_ROOT/conf/httpd_config.conf"
     fi
 }
 
@@ -397,7 +412,7 @@ function uninstall_ols_debian
         LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
         echoY "The installed LSPHP version is $LSPHPVER"
 
-        if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] && [ "x$LSPHPVER" != "x72" ] && [ "x$LSPHPVER" != "x73" ] ; then
+        if [ "x$LSPHPVER" != "x70" ] && [ "x$LSPHPVER" != "x71" ] && [ "x$LSPHPVER" != "x72" ] && [ "x$LSPHPVER" != "x73" ] && [ "x$LSPHPVER" != "x74" ] ; then
             apt-get -y --purge remove lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
         else
             apt-get -y --purge remove lsphp$LSPHPVER-common
@@ -553,27 +568,30 @@ END
     else
 
         if [ "x$OSNAMEVER" = "xDEBIAN7" ] ; then
-            apt-get install python-software-properties
+            apt-get -y -f install python-software-properties
             apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
         elif [ "x$OSNAMEVER" = "xDEBIAN8" ] ; then
-            apt-get install software-properties-common
+            apt-get -y -f install software-properties-common
             apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
         elif [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
-            apt-get install software-properties-common
+            apt-get -y -f install software-properties-common
             apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
 
         elif [ "x$OSNAMEVER" = "xUBUNTU12" ] ; then
-            apt-get install python-software-properties
+            apt-get -y -f install python-software-properties
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
         elif [ "x$OSNAMEVER" = "xUBUNTU14" ] ; then
-            apt-get install software-properties-common
+            apt-get -y -f install software-properties-common
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
         elif [ "x$OSNAMEVER" = "xUBUNTU16" ] ; then
-            apt-get install software-properties-common
+            apt-get -y -f install software-properties-common
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
         elif [ "x$OSNAMEVER" = "xUBUNTU18" ] ; then
-            apt-get install software-properties-common
+            apt-get -y -f install software-properties-common
             apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
+        elif [ "x$OSNAMEVER" = "xUBUNTU20" ] ; then
+            apt-get -y -f install software-properties-common
+            apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8    
         fi
 
         grep -Fq  "http://mirror.jaleco.com/mariadb/repo/" /etc/apt/sources.list.d/mariadb_repo.list
@@ -783,6 +801,7 @@ function install_ols
         echo "$STATUS on Debian/Ubuntu"
         install_ols_debian $STATUS
     fi
+    killall -9 lsphp
 }
 
 
@@ -825,29 +844,31 @@ function gen_selfsigned_cert
         SSL_EMAIL=.
     fi
 
-
-# Create the certificate signing request
-    openssl req -new -passin pass:password -passout pass:password -out $CSR <<EOF
-${SSL_COUNTRY}
-${SSL_STATE}
-${SSL_LOCALITY}
-${SSL_ORG}
-${SSL_ORGUNIT}
-${SSL_HOSTNAME}
-${SSL_EMAIL}
-.
-.
+    
+    
+    COMMNAME=`hostname`
+    
+    cat << EOF > $CSR
+[req]
+prompt=no
+distinguished_name=openlitespeed
+[openlitespeed]
+commonName = ${COMMNAME}
+countryName = ${SSL_COUNTRY}
+localityName = ${SSL_LOCALITY}
+organizationName = ${SSL_ORG}
+organizationalUnitName = ${SSL_ORGUNIT}
+stateOrProvinceName = ${SSL_STATE}
+emailAddress = ${SSL_EMAIL}
+name = openlitespeed
+initials = CP
+dnQualifier = openlitespeed
+[server_exts]
+extendedKeyUsage=1.3.6.1.5.5.7.3.1
 EOF
-    echo ""
-
-    [ -f ${CSR} ] && openssl req -text -noout -in ${CSR}
-    echo ""
-
-# Create the Key
-    openssl rsa -in privkey.pem -passin pass:password -passout pass:password -out ${KEY}
-# Create the Certificate
-    openssl x509 -in ${CSR} -out ${CERT} -req -signkey ${KEY} -days 1000
-
+    openssl req -x509 -config $CSR -extensions 'server_exts' -nodes -days 820 -newkey rsa:2048 -keyout ${KEY} -out ${CERT}
+    rm -f $CSR
+    
     mv ${KEY}   $SERVER_ROOT/conf/$KEY
     mv ${CERT}  $SERVER_ROOT/conf/$CERT
     chmod 0600 $SERVER_ROOT/conf/$KEY
@@ -985,7 +1006,7 @@ define('WP_ADMIN', true);
 activate_plugin('litespeed-cache/litespeed-cache.php', '', false, false);
 
 END
-    $SERVER_ROOT/fcgi-bin/lsphp5 $WORDPRESSPATH/activate_cache.php
+    $SERVER_ROOT/fcgi-bin/lsphpnew $WORDPRESSPATH/activate_cache.php
     rm $WORDPRESSPATH/activate_cache.php
 }
 
@@ -1020,6 +1041,7 @@ function uninstall
     if [ "x$OLSINSTALLED" = "x1" ] ; then
         echoY "Uninstalling ..."
         $SERVER_ROOT/bin/lswsctrl stop
+        killall -9 lsphp
         if [ "x$OSNAME" = "xcentos" ] ; then
             echo "Uninstall on Centos"
             uninstall_ols_centos
@@ -1390,7 +1412,7 @@ if [ "x$ACTION" = "xPURGEALL" ] ; then
     exit 0
 fi
 
-if [ "x$OSNAMEVER" = "xUBUNTU18" ] || [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
+if [ "x$OSNAMEVER" = "xUBUNTU20" ] || [ "x$OSNAMEVER" = "xUBUNTU18" ] || [ "x$OSNAMEVER" = "xDEBIAN9" ] ; then
     if [ "x$LSPHPVER" = "x54" ] || [ "x$LSPHPVER" = "x55" ] || [ "x$LSPHPVER" = "x56" ] ; then
        echoY "We do not support lsphp$LSPHPVER on $OSNAMEVER, lsphp71 will be used instead."
        LSPHPVER=71
