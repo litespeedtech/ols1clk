@@ -31,7 +31,7 @@ settings and values.
 * **--adminpassword(-a) [PASSWORD]:** To set set the WebAdmin password for OpenLiteSpeed instead of a random one.
   * If you omit **[PASSWORD]**, ols1clk will prompt you to provide this password during installation.
 * **--email(-e) EMAIL:** to set the administrator email.
-* **--lsphp VERSION:** to set LSPHP version, such as 56. We currently support versions 54, 55, 56, 70, 71, 72 and 73.
+* **--lsphp VERSION:** to set LSPHP version, such as 74. We currently support versions 70, 71, 72, 73 and 74.
 * **--mariadbver VERSION:** to set MariaDB server version, such as 10.1. We currently support versions 10.0, 10.1, 10.2, 10.3 and 10.4.
 * **--wordpress(-w):** to install and setup WordPress. You will still need to access the /wp-admin/wp-config.php file by browser to complete WordPress installation.
 * **--wordpressplus SITEDOMAIN:** to install, setup, and configure WordPress, eliminating the need to use the wp-config.php setup. 
@@ -62,4 +62,3 @@ Get in Touch
 --------
 
 OpenLiteSpeed has a [Google Group](https://groups.google.com/forum/#!forum/openlitespeed-development). If you find a bug, want to request new features, or just want to talk about OpenLiteSpeed, this is the place to do it.
-
