@@ -981,8 +981,12 @@ context / {
     enable                1
     inherit               1
     rewriteFile           $WORDPRESSPATH/.htaccess
-
   }
+}
+
+rewrite  {
+  enable                  1
+  autoLoadHtaccess        1
 }
 
 END
