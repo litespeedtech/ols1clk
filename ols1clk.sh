@@ -544,8 +544,19 @@ function install_mysql
             else
                 CENTOSVER=centos$OSVER-amd64
             fi
-
-            cat >> $REPOFILE <<END
+            if [ "x$OSNAMEVER" = "xCENTOS8" ] ; then
+                rpm --import https://downloads.mariadb.com/MariaDB/MariaDB-Server-GPG-KEY
+                cat >> $REPOFILE <<END
+[mariadb]
+name = MariaDB
+baseurl = https://downloads.mariadb.com/MariaDB/mariadb-$MARIADBVER/yum/rhel/\$releasever/\$basearch
+gpgkey = file:///etc/pki/rpm-gpg/MariaDB-Server-GPG-KEY
+gpgcheck=1
+enabled = 1
+module_hotfixes = 1
+END
+            else
+                cat >> $REPOFILE <<END
 [mariadb]
 name = MariaDB
 baseurl = http://yum.mariadb.org/$MARIADBVER/$CENTOSVER
@@ -553,6 +564,7 @@ gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 gpgcheck=1
 
 END
+            fi 
         fi
         if [ "x$OSNAMEVER" = "xCENTOS8" ] ; then
             yum install -y boost-program-options
