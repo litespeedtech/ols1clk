@@ -13,7 +13,7 @@ ols1clk can be run in the following way:
 When run with no options, ols1clk will install OpenLiteSpeed with the default settings and values.
 
 ### Options:
-|  --- |    Options    | Description|
+|  Opt |    Options    | Description|
 | :---: | ---------  | ---  |
 | `-A` |`--adminpassword [PASSWORD]`|      To set the WebAdmin password for OpenLiteSpeed instead of using a random one.|
 | `-E` |`--email [EMAIL]`|                 To set the administrator email.|
