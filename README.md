@@ -1,5 +1,5 @@
 # ols1clk
-[![Build Status](https://github.com/litespeedtech/ols1clk/workflows/ubuntu/badge.svg)](https://github.com/litespeedtech/ols1clk/actions/)
+[![Build Status](https://github.com/litespeedtech/ols1clk/workflows/ols1clk/badge.svg)](https://github.com/litespeedtech/ols1clk/actions/)
 [<img src="https://img.shields.io/badge/slack-LiteSpeed-blue.svg?logo=slack">](litespeedtech.com/slack) 
 [<img src="https://img.shields.io/twitter/follow/litespeedtech.svg?label=Follow&style=social">](https://twitter.com/litespeedtech)
 ## Description
