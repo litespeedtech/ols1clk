@@ -146,9 +146,9 @@ function check_root
 function update_system(){
     echoG 'System update'
     if [ "$OSNAME" = "centos" ] ; then
-        silent ${YUM} update
+        silent ${YUM} update >/dev/null 2>&1
     else
-        silent ${APT} update && ${APT} upgrade -y
+        silent ${APT} update && ${APT} upgrade -y >/dev/null 2>&1
     fi
 }
 
