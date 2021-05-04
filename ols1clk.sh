@@ -143,6 +143,15 @@ function check_root
     fi
 }
 
+function update_system(){
+    echoG 'System update'
+    if [ "$OSNAME" = "centos" ] ; then
+        silent ${YUM} update
+    else
+        silent ${APT} update && ${APT} upgrade -y
+    fi
+}
+
 function check_wget
 {
     which wget  >/dev/null 2>&1
@@ -173,7 +182,7 @@ function check_curl
 
         which curl  >/dev/null 2>&1
         if [ $? != 0 ] ; then
-            echoR "An error occured during wget installation."
+            echoR "An error occured during curl installation."
             ALLERRORS=1
         fi
     fi
@@ -1536,6 +1545,7 @@ function main_init_check
 function main_init_package
 {
     update_centos_hashlib
+    update_system
     check_wget
     check_curl
 }

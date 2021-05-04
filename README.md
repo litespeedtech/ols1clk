@@ -1,14 +1,15 @@
 # ols1clk
-
+[<img src="https://img.shields.io/badge/slack-LiteSpeed-blue.svg?logo=slack">](litespeedtech.com/slack) 
 ## Description
---------
 
 ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-W** parameter that will install WordPress at the same time but it must still be configured through the wp-config.php page. A MariaDB database can also be set up using this script if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** parameter. To completely install WordPress with your OpenLiteSpeed installation, skipping the need for the wp-config.php page, use the **--wordpressplus** flag. This can be used with **--wpuser**, **--wppassword**, **--wplang**, and **--sitetitle** to configure each of the settings normally set by wp-config.php.
 
 ## Running ols1clk
 
 ols1clk can be run in the following way:
-*./ols1clk.sh [options] [options] …*
+```
+./ols1clk.sh [options] [options] …
+```
 
 When run with no options, ols1clk will install OpenLiteSpeed with the default settings and values.
 
@@ -49,6 +50,35 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      `./ols1clk.sh -R 123456 -W `         |To install OpenLiteSpeed with WordPress and MySQL root password "123456".|
 |      `./ols1clk.sh --wordpressplus a.com` |To install OpenLiteSpeed with a fully configured WordPress installation at "a.com".|
 
+## FAQ
+### How do I create additional Virtual Hosts from console?
+Run the following command to create additional virtual host in few seconds. The example document root will be **/var/www/www.example.com**. Be sure to substitute the domain to your need. 
+```
+/bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com
+```
+
+### How do I create additional Virtual Hosts with WordPress from console?
+For the first time creation, you will need to get your database root password from **/usr/local/lsws/password**, then echo the password to the specified location. Be sure to substitute the `DB_ROOT_PASSWORD` to your password. 
+```
+echo 'root_mysql_pass="DB_ROOT_PASSWORD"' > /root/.db_password
+```
+If your system has no `unzip` package preinstalled, then install it. `apt-get install unzip -y` for Debian, and `yum -y install unzip` for CentOS system. 
+
+Then we can run the following command to create additional virtual host with Wordpress.
+```
+/bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com -w
+```
+
+### How to I create additional Virtual Hosts and LE certificate from console?
+For the first time setup, you will need to install [certbot](https://certbot.eff.org/) on your system, e.g. `apt-get -y install certbot` for Ubuntu 20.04 system. 
+
+Please be sure that your domain is already pointing to the server
+
+Then we can run the following command to create additional virtual host with Let's Encrypt certificate apply. Be sure to substitute the domain and your email to your need. 
+```
+/bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com -le admin@example.com -f
+```
+  - `-f` stands for force https redirection 
 
 ## Support & Feedback
 If you still have a question after using ols1clk, you have a few options.
