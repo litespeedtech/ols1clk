@@ -23,7 +23,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 80. We currently support versions '56 70 71 72 73 74 80'.|
 |      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.5. We currently support versions '10.2 10.3 10.4 10.5'.|
 | `-W` |`--wordpress`|                     To install WordPress. You will still need to complete the WordPress setup by browser|
-|      |  `--wordpressplus [SITEDOMAIN]`|  To install, setup, and configure WordPress, also LSCache will be enabled|
+|      |  `--wordpressplus [SITEDOMAIN]`|  To install, set up, and configure WordPress, also LSCache will be enabled|
 |      |  `--wordpresspath [WP_PATH]`|     To specify a location for the new WordPress installation or use for an existing WordPress.|
 | `-R` | `--dbrootpassword [PASSWORD]` |   To set the database root password instead of using a random one.|
 |      |  `--dbname [DATABASENAME]` |      To set the database name to be used by WordPress.|
@@ -54,36 +54,36 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 
 ## FAQ
 ### How do I create additional Virtual Hosts from console?
-Run the following command to create additional virtual host in few seconds. The example document root will be **/var/www/www.example.com**. Be sure to substitute the domain to your need. 
+Run the following command to create an additional virtual host in a few seconds. The example document root will be **/var/www/www.example.com**. Be sure to substitute your own domain. 
 ```
 /bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com
 ```
 
 ### How do I create additional Virtual Hosts with WordPress from console?
-For the first time creation, you will need to get your database root password from **/usr/local/lsws/password**, then echo the password to the specified location. Be sure to substitute the `DB_ROOT_PASSWORD` to your password. 
+The first time you create an additional Virtual Host, you will need to get your database root password from **/usr/local/lsws/password**, then echo the password to the specified location. Be sure to substitute your own password for `DB_ROOT_PASSWORD`. 
 ```
 echo 'root_mysql_pass="DB_ROOT_PASSWORD"' > /root/.db_password
 ```
 If your system has no `unzip` package preinstalled, then install it. `apt-get install unzip -y` for Debian, and `yum -y install unzip` for CentOS system. 
 
-Then we can run the following command to create additional virtual host with Wordpress.
+Then run the following command to create an additional virtual host with Wordpress.
 ```
 /bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com -w
 ```
 
 ### How to I create additional Virtual Hosts and LE certificate from console?
-For the first time setup, you will need to install [certbot](https://certbot.eff.org/) on your system, e.g. `apt-get -y install certbot` for Ubuntu 20.04 system. 
+The first time you do this, you will need to install [certbot](https://certbot.eff.org/) on your system. Use `apt-get -y install certbot` for Ubuntu 20.04. 
 
-Please be sure that your domain is already pointing to the server
+Please be sure that your domain is already pointing to the server.
 
-Then we can run the following command to create additional virtual host with Let's Encrypt certificate apply. Be sure to substitute the domain and your email to your need. 
+Then run the following command to create an additional virtual host with a Let's Encrypt certificate applied. Be sure to substitute your own domain and your email address. 
 ```
 /bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com -le admin@example.com -f
 ```
-  - `-f` stands for force https redirection 
+Note: The `-f` option is to force https redirection 
 
 ## Support & Feedback
-If you still have a question after using ols1clk, you have a few options.
+If you still have a question after reading these instructions, you have a few options:
 * Join [the GoLiteSpeed Slack community](https://litespeedtech.com/slack) for real-time discussion
-* Reporting any issue on [Github ols1clk](https://github.com/litespeedtech/ols1clk/issues) project
-* Reporting any issue or want to talk about OpenLiteSpeed on [Google Group](https://groups.google.com/forum/#!forum/openlitespeed-development)
+* Report any issue on the [Github ols1clk](https://github.com/litespeedtech/ols1clk/issues) project
+* Report any issue or discuss any OpenLiteSpeed topic on the [OLS Google Group](https://groups.google.com/forum/#!forum/openlitespeed-development)
