@@ -52,9 +52,9 @@ ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(56 70 71 72 73 74 80)
-MARIADBVERLIST=(10.1 10.2 10.3 10.4 10.5)
-LSPHPVER=74
-MARIADBVER=10.4
+MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6)
+LSPHPVER=80
+MARIADBVER=10.6
 WEBADMIN_LSPHPVER=73
 ALLERRORS=0
 TEMPPASSWORD=
@@ -146,7 +146,7 @@ function check_root
 function update_system(){
     echoG 'System update'
     if [ "$OSNAME" = "centos" ] ; then
-        silent ${YUM} update >/dev/null 2>&1
+        silent ${YUM} update -y >/dev/null 2>&1
     else
         silent ${APT} update && ${APT} upgrade -y >/dev/null 2>&1
     fi
