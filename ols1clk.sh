@@ -1384,13 +1384,18 @@ function befor_install_display
 
 function install_wp_cli
 {
-    if [ -e /usr/local/bin/wp ]; then 
+    if [ -e /usr/local/bin/wp ] || [ -e /usr/bin/wp ]; then 
         echoG 'WP CLI already exist'
     else    
         echoG "Install wp_cli"
         curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
         chmod +x wp-cli.phar
-        mv wp-cli.phar /usr/local/bin/wp
+        echo $PATH | grep '/usr/local/bin' >/dev/null 2>&1
+        if [ ${?} = 0 ]; then
+            mv wp-cli.phar /usr/local/bin/wp
+        else
+            mv wp-cli.phar /usr/bin/wp
+        fi    
     fi
     if [ ! -e /usr/bin/php ] && [ ! -L /usr/bin/php ]; then
         ln -s ${SERVER_ROOT}/lsphp${LSPHPVER}/bin/php /usr/bin/php
