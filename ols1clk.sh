@@ -320,6 +320,11 @@ function check_os
             OSVER=buster
             MARIADBCPUARCH="arch=amd64,i386"
             ;;
+        bullseye)
+            OSNAMEVER=DEBIAN11
+            OSVER=bullseye
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;
         esac    
     fi
 
@@ -743,6 +748,9 @@ function debian_install_mysql
         silent ${APT} -y -f install software-properties-common gnupg
         silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
     elif [ "$OSNAMEVER" = "DEBIAN10" ] ; then
+        silent ${APT} -y -f install software-properties-common gnupg
+        silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
+    elif [ "$OSNAMEVER" = "DEBIAN11" ] ; then
         silent ${APT} -y -f install software-properties-common gnupg
         silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
     elif [ "$OSNAMEVER" = "UBUNTU14" ] ; then
@@ -1235,7 +1243,7 @@ function read_password
 
 function check_php_param
 {
-    if [ "$OSNAMEVER" = "UBUNTU20" ] || [ "$OSNAMEVER" = "UBUNTU18" ] || [ "$OSNAMEVER" = "DEBIAN9" ] || [ "$OSNAMEVER" = "DEBIAN10" ]; then
+    if [ "$OSNAMEVER" = "UBUNTU20" ] || [ "$OSNAMEVER" = "UBUNTU18" ] || [ "$OSNAMEVER" = "DEBIAN9" ] || [ "$OSNAMEVER" = "DEBIAN10" ] || [ "$OSNAMEVER" = "DEBIAN11" ]; then
         if [ "$LSPHPVER" = "56" ]; then
             echoY "We do not support lsphp$LSPHPVER on $OSNAMEVER, lsphp73 will be used instead."
             LSPHPVER=73
