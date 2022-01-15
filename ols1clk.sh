@@ -329,7 +329,7 @@ function check_os
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18,20)."
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-11) and Ubuntu(14,16,18,20)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
