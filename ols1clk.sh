@@ -52,7 +52,7 @@ ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(56 70 71 72 73 74 80)
-MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6)
+MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7)
 LSPHPVER=80
 MARIADBVER=10.6
 WEBADMIN_LSPHPVER=73
@@ -329,7 +329,7 @@ function check_os
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-10) and Ubuntu(14,16,18,20)."
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-11) and Ubuntu(14,16,18,20)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
