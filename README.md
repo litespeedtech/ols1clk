@@ -35,6 +35,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      |   `--wppassword [PASSWORD]`    |  To set the WordPress admin user password for WordPress dashboard login.|
 |      |   `--wplang [WP_LANGUAGE]` |      To set the WordPress language. Default value is "en_US" for English.|
 |      |   `--sitetitle [WP_TITLE]` |      To set the WordPress site title. Default value is mySite.|
+|      |   `--pure-mariadb`|               To install OpenLiteSpeed and MariaDB.|
 | `-U` |   `--uninstall`  |                To uninstall OpenLiteSpeed and remove installation directory.|
 | `-P` |   `--purgeall`   |                To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL.|
 | `-Q` |   `--quiet`      |                To use quiet mode, won't prompt to input anything.|

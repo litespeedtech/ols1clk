@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2021 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2022 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -17,7 +17,7 @@
 #    along with this program. If not, see http://www.gnu.org/licenses/.      #
 ##############################################################################
 
-###    Author: dxu@litespeedtech.com (David Shue)
+###    Author: LiteSpeed
 
 
 TEMPRANDSTR=
@@ -51,7 +51,7 @@ ADMINPASSWORD=
 ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
-LSPHPVERLIST=(56 70 71 72 73 74 80)
+LSPHPVERLIST=(71 72 73 74 80 81)
 MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7)
 LSPHPVER=80
 MARIADBVER=10.6
@@ -225,6 +225,7 @@ function usage
     echoW " --wppassword [PASSWORD]           " "To set the WordPress admin user password for WordPress dashboard login."
     echoW " --wplang [WP_LANGUAGE]            " "To set the WordPress language. Default value is \"en_US\" for English."
     echoW " --sitetitle [WP_TITLE]            " "To set the WordPress site title. Default value is mySite."
+    echoW " --pure-mariadb                    " "To install OpenLiteSpeed and MariaDB"
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
     echoNW "  -P,    --purgeall               " "${EPACE} To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL."
     echoNW "  -Q,    --quiet                  " "${EPACE} To use quiet mode, won't prompt to input anything."
@@ -247,7 +248,7 @@ function display_license
 {
     echoY '**********************************************************************************************'
     echoY '*                    Open LiteSpeed One click installation, Version 3.0                      *'
-    echoY '*                    Copyright (C) 2016 - 2021 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Copyright (C) 2016 - 2022 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -377,21 +378,24 @@ function install_ols_centos
         silent ${YUM} -y remove lsphp$LSPHPVER-mysqlnd
     fi
     silent ${YUM} -y install lsphp$LSPHPVER-mysqlnd
-    if [ "$LSPHPVER" = "80" ]; then 
+    if [[ "$LSPHPVER" == 8* ]]; then 
         silent ${YUM} -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring \
         lsphp$LSPHPVER-xml lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     else
         silent ${YUM} -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring \
         lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON
     fi
-    echoB "${FPACE} - Setup lsphp symlink"
     if [ $? != 0 ] ; then
         echoR "An error occured during OpenLiteSpeed installation."
         ALLERRORS=1
     else
+        echoB "${FPACE} - Setup lsphp symlink"
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "${WEBCF}"
         sed -i -e "s/lsphp${WEBADMIN_LSPHPVER}\/bin\/lsphp/lsphp$LSPHPVER\/bin\/lsphp/g" "${WEBCF}"
+        if [ ! -f /usr/bin/php ]; then
+            ln -s ${SERVER_ROOT}/lsphp${LSPHPVER}/bin/php /usr/bin/php
+        fi          
     fi
 }
 
@@ -469,7 +473,7 @@ function install_ols_debian
 
     if [ "$LSPHPVER" = "56" ]; then
         silent ${APT} -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
-    elif [ "$LSPHPVER" = "80" ]; then
+    elif [[ "$LSPHPVER" == 8* ]]; then
         silent ${APT} -y install $action lsphp$LSPHPVER-common
     else
         silent ${APT} -y install $action lsphp$LSPHPVER-common lsphp$LSPHPVER-json
@@ -479,12 +483,15 @@ function install_ols_debian
         echoR "An error occured during lsphp$LSPHPVER installation."
         ALLERRORS=1
     fi
-    echoB "${FPACE} - Setup lsphp symlink"
-    #if [ ${INSTALL_STATUS} = 0 ]; then 
+    
     if [ -e $SERVER_ROOT/bin/openlitespeed ]; then 
+        echoB "${FPACE} - Setup lsphp symlink"
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "${WEBCF}"    
         sed -i -e "s/lsphp${WEBADMIN_LSPHPVER}\/bin\/lsphp/lsphp$LSPHPVER\/bin\/lsphp/g" "${WEBCF}"
+        if [ ! -f /usr/bin/php ]; then
+            ln -s ${SERVER_ROOT}/lsphp${LSPHPVER}/bin/php /usr/bin/php
+        fi        
     fi
 }
 
@@ -1051,6 +1058,7 @@ function set_ols_password
 
 function config_server
 {
+    echoB "${FPACE} - Config OpenLiteSpeed"
     if [ "$INSTALLWORDPRESS" != "1" ]; then 
         if [ -e "${WEBCF}" ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "${WEBCF}"
@@ -1075,6 +1083,7 @@ END
         fi
         echo ols1clk > "$SERVER_ROOT/PLAT"
     fi
+    sed -i s"|lsphp.*/bin/lsphp|lsphp${LSPHPVER}/bin/lsphp|g" ${WEBCF}
 }
 
 function config_vh_wp
@@ -1387,6 +1396,7 @@ function befor_install_display
             exit 0
         fi
     fi  
+    echo
     echoCYAN 'Start OpenLiteSpeed one click installation >> >> >> >> >> >> >>'
 }
 
