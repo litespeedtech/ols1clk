@@ -35,7 +35,10 @@ DATABASENAME=olsdbname
 USERNAME=olsdbuser
 VERBOSE=0
 PURE_DB=0
+PURE_MYSQL=0
+WITH_MYSQL=0
 WORDPRESSPATH=$SERVER_ROOT/wordpress
+PWD_FILE=$SERVER_ROOT/password
 WPPORT=80
 SSLWPPORT=443
 WORDPRESSINSTALLED=
@@ -53,8 +56,9 @@ USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(71 72 73 74 80 81)
 MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7)
-LSPHPVER=80
+LSPHPVER=81
 MARIADBVER=10.6
+MYSQLVER=8.0
 WEBADMIN_LSPHPVER=73
 ALLERRORS=0
 TEMPPASSWORD=
@@ -210,8 +214,8 @@ function usage
     echo -e "\033[1mOPTIONS\033[0m"
     echoNW "  -A,    --adminpassword [PASSWORD]" "${EPACE}To set the WebAdmin password for OpenLiteSpeed instead of using a random one."
     echoNW "  -E,    --email [EMAIL]          " "${EPACE} To set the administrator email."
-    echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 80. We currently support versions '${LSPHPVERLIST[@]}'."
-    echoW " --mariadbver [VERSION]            " "To set MariaDB version, such as 10.5. We currently support versions '${MARIADBVERLIST[@]}'."
+    echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 81. We currently support versions '${LSPHPVERLIST[@]}'."
+    echoW " --mariadbver [VERSION]            " "To set MariaDB version, such as 10.6. We currently support versions '${MARIADBVERLIST[@]}'."
     echoNW "  -W,    --wordpress              " "${EPACE} To install WordPress. You will still need to complete the WordPress setup by browser"
     echoW " --wordpressplus [SITEDOMAIN]      " "To install, setup, and configure WordPress, also LSCache will be enabled"
     echoW " --wordpresspath [WP_PATH]         " "To specify a location for the new WordPress installation or an existing WordPress."
@@ -226,6 +230,8 @@ function usage
     echoW " --wplang [WP_LANGUAGE]            " "To set the WordPress language. Default value is \"en_US\" for English."
     echoW " --sitetitle [WP_TITLE]            " "To set the WordPress site title. Default value is mySite."
     echoW " --pure-mariadb                    " "To install OpenLiteSpeed and MariaDB"
+    echoW " --pure-mysql                      " "To install OpenLiteSpeed and MySQL"
+    echoW " --with-mysql                      " "To install OpenLiteSpeed/App with MySQL"
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
     echoNW "  -P,    --purgeall               " "${EPACE} To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL."
     echoNW "  -Q,    --quiet                  " "${EPACE} To use quiet mode, won't prompt to input anything."
@@ -297,6 +303,11 @@ function check_os
             OSVER=focal
             MARIADBCPUARCH="arch=amd64"
             ;;
+        #jammy)            
+        #    OSNAMEVER=UBUNTU22
+        #    OSVER=jammy
+        #    MARIADBCPUARCH="arch=amd64"
+        #    ;;            
         esac
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
@@ -604,13 +615,22 @@ function random_password
     fi
 }
 
+function random_strong_password
+{
+    if [ ! -z ${1} ]; then 
+        TEMPPASSWORD="${1}"
+    else    
+        TEMPPASSWORD=$(openssl rand -base64 32)
+    fi
+}
+
 function main_gen_password
 {
     random_password "${ADMINPASSWORD}"
     ADMINPASSWORD="${TEMPPASSWORD}"
-    random_password "${ROOTPASSWORD}"
+    random_strong_password "${ROOTPASSWORD}"
     ROOTPASSWORD="${TEMPPASSWORD}"
-    random_password "${USERPASSWORD}"
+    random_strong_password "${USERPASSWORD}"
     USERPASSWORD="${TEMPPASSWORD}"
     random_password "${WPPASSWORD}"
     WPPASSWORD="${TEMPPASSWORD}"
@@ -630,9 +650,9 @@ function main_gen_password
     fi    
 }
 
-function main_set_password
+function main_ols_password
 {
-    echo "WebAdmin username is [admin], password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
+    echo "WebAdmin username is [admin], password is [$ADMINPASSWORD]." >> ${PWD_FILE}
     set_ols_password
 }
 
@@ -688,7 +708,7 @@ function test_mysql_password
     fi
 }
 
-function centos_install_mysql
+function centos_install_mariadb
 {
     echoB "${FPACE} - Add MariaDB repo"
     local REPOFILE=/etc/yum.repos.d/MariaDB.repo
@@ -742,7 +762,28 @@ END
     fi    
 }
 
-function debian_install_mysql
+function centos_install_mysql
+{
+    echoB "${FPACE} - Add MySQL repo"
+    if [ "${OSVER}" = '8' ]; then 
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el8-4.noarch.rpm
+    elif [ "${OSVER}" = '7' ]; then 
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el7-6.noarch.rpm
+    else
+        echoR 'No repo found, exit!'; exit 1
+    fi
+    rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 >/dev/null 
+    yum-config-manager --disable mysql57-community >/dev/null
+    yum-config-manager --enable mysql80-community  >/dev/null
+    if yum search 'mysql-community-server' | grep 'mysql-community-server\.' >/dev/null 2>&1; then 
+        silent ${YUM} install -y mysql-community-server
+    else
+        silent ${YUM} install -y mysql-server
+    fi
+    service mysqld start 2>/dev/null
+}
+
+function debian_install_mariadb
 {
     echoB "${FPACE} - Install software properties"
     if [ "$OSNAMEVER" = "DEBIAN7" ] ; then
@@ -795,13 +836,58 @@ function debian_install_mysql
     service mysql start
 }
 
-function install_mysql
+function debian_install_mysql
+{
+    echoB "${FPACE} - Install software properties"
+    local MYSQL_REPO='/etc/apt/sources.list.d/mysql.list'
+    if [ "$OSNAMEVER" = "DEBIAN7" ] ; then
+        silent ${APT} -y -f install python-software-properties
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
+    else
+        silent ${APT} -y -f install software-properties-common
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
+    fi
+    apt-key list 2>&1 | grep MySQL >/dev/null 
+    if [ ${?} != 0 ]; then 
+        echoY 'Key add failed from keyserver.ubuntu.com, try pgp.mit.edu!'
+        apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29
+        apt-key list 2>&1 | grep MySQL >/dev/null 
+        if [ ${?} != 0 ]; then 
+            echoR 'Key add failed from pgp.mit.edu, please check the key issue, exit!'
+            exit 1
+        fi
+    fi
+    echoB "${FPACE} - Add mysql ${MYSQLVER} repo"
+    if [ -e "${MYSQL_REPO}" ]; then
+        grep -Fq  "repo.mysql.com" "${MYSQL_REPO}" >/dev/null 2>&1
+        if [ $? != 0 ] ; then
+            echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"
+        fi
+    else 
+        echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"  
+    fi
+    echoB "${FPACE} - Update packages"
+    ${APT} update
+    echoB "${FPACE} - Install Mysql"
+    debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password ${ROOTPASSWORD}"
+    debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password ${ROOTPASSWORD}"
+    DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-server > /dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "An error occured during installation of MYSQL. Please fix this error and try again."
+        echoR "You may want to manually run the command 'apt-get -y -f --allow-unauthenticated install mysql-server' to check. Aborting installation!"
+        exit 1
+    fi
+    echoB "${FPACE} - Start Mysql"
+    service mysql start
+}
+
+function install_mariadb
 {
     echoG "Start Install MariaDB"
     if [ "$OSNAME" = 'centos' ] ; then
-        centos_install_mysql
+        centos_install_mariadb
     else
-        debian_install_mysql
+        debian_install_mariadb
     fi
     if [ $? != 0 ] ; then
         echoR "An error occured when starting the MariaDB service. "
@@ -856,12 +942,79 @@ function install_mysql
             fi
         fi
     fi
+    save_db_root_pwd
     echoG "End Install MariaDB"
 }
 
-function setup_mysql
+function install_mysql
 {
-    echoG "Start setup mysql"
+    echoG "Start Install MySQL"
+    if [ "$OSNAME" = 'centos' ] ; then
+        centos_install_mysql
+    else
+        debian_install_mysql
+    fi
+    if [ $? != 0 ] ; then
+        echoR "An error occured when starting the MySQL service. "
+        echoR "Please fix this error and try again. Aborting installation!"
+        exit 1
+    fi
+
+    echoB "${FPACE} - Set MySQL root"
+    if [ "$OSNAME" = 'centos' ] ; then
+        TMP_LOG_ROOT_PASS=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}')
+        mysqladmin -uroot -p$TMP_LOG_ROOT_PASS password $ROOTPASSWORD 2>/dev/null
+    fi        
+    mysql -uroot -p${ROOTPASSWORD} -e 'status' >/dev/null 2>&1
+    if [ $? = 0 ] ; then
+        CURROOTPASSWORD=$ROOTPASSWORD
+    else
+        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD 2>/dev/null
+        if [ $? = 0 ] ; then
+            CURROOTPASSWORD=$ROOTPASSWORD
+        else
+            echoR "Failed to set MySQL root password to $ROOTPASSWORD, it may already have a root password."
+            printf '\033[31mInstallation must know the password for the next step.\033[0m'
+            test_mysql_password
+
+            if [ "$TESTPASSWORDERROR" = "1" ] ; then
+                echoY "If you forget your password you may stop the mysqld service and run the following command to reset it,"
+                echoY "mysqld_safe --skip-grant-tables &"
+                echoY "mysql --user=root mysql"
+                echoY "update user set Password=PASSWORD('new-password') where user='root'; flush privileges; exit; "
+                echoR "Aborting installation."
+                echo
+                exit 1
+            fi
+
+            if [ "$CURROOTPASSWORD" != "$ROOTPASSWORD" ] ; then
+                echoY "Current MySQL root password is $CURROOTPASSWORD, it will be changed to $ROOTPASSWORD."
+                printf '\033[31mDo you still want to change it?[y/N]\033[0m '
+                read answer
+                echo
+
+                if [ "$answer" != "Y" ] && [ "$answer" != "y" ] ; then
+                    echoG "OK, MySQL root password not changed."
+                    ROOTPASSWORD=$CURROOTPASSWORD
+                else
+                    mysqladmin -uroot -p$CURROOTPASSWORD password $ROOTPASSWORD
+                    if [ $? = 0 ] ; then
+                        echoG "OK, MySQL root password changed to $ROOTPASSWORD."
+                    else
+                        echoR "Failed to change MySQL root password, it is still $CURROOTPASSWORD."
+                        ROOTPASSWORD=$CURROOTPASSWORD
+                    fi
+                fi
+            fi
+        fi
+    fi
+    save_db_root_pwd
+    echoG "End Install MySQL"
+}
+
+function setup_mariadb_user
+{
+    echoG "Start setup MariaDB"
     local ERROR=
     #delete user if exists
     mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';"
@@ -899,6 +1052,51 @@ function setup_mysql
     else
         echoR "Finished MySQL setup - some error(s) occured."
     fi
+    save_db_user_pwd
+    echoG "End setup mysql"
+}
+
+function setup_mysql_user
+{
+    echoG "Start setup MySQL"
+    local ERROR=
+    #delete user if exists
+    mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 2>/dev/null
+
+    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user" 2>/dev/null` | grep "$USERNAME" >/dev/null
+    if [ $? = 0 ] ; then
+        echoG "user $USERNAME exists in mysql.user"
+    else
+        mysql -uroot -p$ROOTPASSWORD  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';" 2>/dev/null
+        if [ $? = 0 ] ; then
+            mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost;" 2>/dev/null
+        else
+            echoR "Failed to create MySQL user $USERNAME. This user may already exist. If it does not, another problem occured."
+            echoR "Please check this and update the wp-config.php file."
+            ERROR="Create user error"
+        fi
+    fi
+
+    mysql -uroot -p$ROOTPASSWORD  -e "CREATE DATABASE IF NOT EXISTS $DATABASENAME;" 2>/dev/null
+    if [ $? = 0 ] ; then
+        mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON $DATABASENAME.* TO '$USERNAME'@localhost;" 2>/dev/null
+    else
+        echoR "Failed to create database $DATABASENAME. It may already exist. If it does not, another problem occured."
+        echoR "Please check this and update the wp-config.php file."
+        if [ "x$ERROR" = "x" ] ; then
+            ERROR="Create database error"
+        else
+            ERROR="$ERROR and create database error"
+        fi
+    fi
+    mysql -uroot -p$ROOTPASSWORD  -e "flush privileges;" 2>/dev/null
+
+    if [ "x$ERROR" = "x" ] ; then
+        echoG "Finished MySQL setup without error."
+    else
+        echoR "Finished MySQL setup - some error(s) occured."
+    fi
+    save_db_user_pwd
     echoG "End setup mysql"
 }
 
@@ -949,14 +1147,33 @@ function purgedatabase
     fi
 }
 
+function save_db_root_pwd
+{
+    echo "mysql root password is [$ROOTPASSWORD]." >> ${PWD_FILE}
+}
+
+function save_db_user_pwd
+{
+    echo "mysql WordPress DataBase name is [$DATABASENAME], username is [$USERNAME], password is [$USERPASSWORD]." >> ${PWD_FILE}
+}
+
 function pure_mariadb
+{
+    if [ "$MYSQLINSTALLED" = "0" ] ; then
+        install_mariadb
+        ROOTPASSWORD=$CURROOTPASSWORD
+    else
+        echoG 'MariaDB already exist, skip!'
+    fi
+}
+
+function pure_mysql
 {
     if [ "$MYSQLINSTALLED" = "0" ] ; then
         install_mysql
         ROOTPASSWORD=$CURROOTPASSWORD
-        setup_mysql        
     else
-        echoG 'MariaDB already exist, skip!'
+        echoG 'MySQL already exist, skip!'
     fi
 }
 
@@ -1352,7 +1569,14 @@ function befor_install_display
     echoY "WebAdmin password:        " "$ADMINPASSWORD"
     echoY "WebAdmin email:           " "$EMAIL"
     echoY "LSPHP version:            " "$LSPHPVER"
-    echoY "MariaDB version:          " "$MARIADBVER"
+    if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ]; then 
+        echoY "MariaDB version:          " "$MARIADBVER"
+    elif [ "${PURE_MYSQL}" = 1 ]; then 
+        echoY "MySQL version:            " "$MYSQLVER"
+        echoY "MySQL root Password:      " "$ROOTPASSWORD"
+    elif [ "${WITH_MYSQL}" = 1 ]; then   
+        echoY "MySQL version:            " "$MYSQLVER"
+    fi
 
     if [ "$INSTALLWORDPRESS" = "1" ] ; then
         echoY "Install WordPress:        " Yes
@@ -1386,7 +1610,7 @@ function befor_install_display
         echoY "Server HTTP port:         " "$WPPORT"
         echoY "Server HTTPS port:        " "$SSLWPPORT"
     fi
-    echoNW "Your password will be written to file:  $SERVER_ROOT/password"
+    echoNW "Your password will be written to file:  ${PWD_FILE}"
     echo 
     if [ "$FORCEYES" != "1" ] ; then
         printf 'Are these settings correct? Type n to quit, otherwise will continue. [Y/n]'
@@ -1425,11 +1649,21 @@ function install_wp_cli
     fi
 }
 
-function main_install_wordpress
+function main_pure_db
 {
     if [ "${PURE_DB}" = '1' ]; then 
         echoG 'Install MariaDB only'
         pure_mariadb
+    elif [ "${PURE_MYSQL}" = '1' ]; then 
+        echoG 'Install MySQL only'
+        pure_mysql
+    fi    
+}
+
+function main_install_wordpress
+{
+    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ]; then 
+        echoG 'Skip WordPress setup.'
     else
         if [ "$WORDPRESSINSTALLED" = '1' ] ; then
             echoY 'Skip WordPress installation!'
@@ -1439,7 +1673,11 @@ function main_install_wordpress
                 config_vh_wp
                 check_port_usage
                 if [ "$MYSQLINSTALLED" != "1" ] ; then
-                    install_mysql
+                    if [ "${WITH_MYSQL}" = '0' ]; then 
+                        install_mariadb
+                    else    
+                        install_mysql
+                    fi    
                 else
                     test_mysql_password
                 fi
@@ -1447,17 +1685,19 @@ function main_install_wordpress
                     echoY "MySQL setup bypassed, can not get root password."
                 else
                     ROOTPASSWORD=$CURROOTPASSWORD
-                    setup_mysql
+                    if [ "${WITH_MYSQL}" = '0' ]; then
+                        setup_mariadb_user
+                    else 
+                        setup_mysql_user
+                    fi    
                 fi
                 download_wordpress
                 create_wordpress_cf
                 if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then            
                     install_wordpress_core
-                    echo "WordPress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password  
+                    echo "WordPress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> ${PWD_FILE} 
                 fi
                 change_owner ${WORDPRESSPATH}
-                echo "mysql WordPress DataBase name is [$DATABASENAME], username is [$USERNAME], password is [$USERPASSWORD]." >> $SERVER_ROOT/password    
-                echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password        
             fi
         fi 
     fi    
@@ -1476,13 +1716,13 @@ function check_port_usage
 
 function after_install_display
 {
-    chmod 600 "$SERVER_ROOT/password"
+    chmod 600 "${PWD_FILE}"
     if [ "$ALLERRORS" = "0" ] ; then
         echoG "Congratulations! Installation finished."
     else
         echoY "Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
     fi
-    if [ "$INSTALLWORDPRESSPLUS" = "0" ] && [ "$INSTALLWORDPRESS" = "1" ] && [ "${PURE_DB}" = '0' ]; then
+    if [ "$INSTALLWORDPRESSPLUS" = "0" ] && [ "$INSTALLWORDPRESS" = "1" ] && [ "${PURE_DB}" = '0' ] && [ "${PURE_MYSQL}" = '0' ]; then
         echo "Please access http://server_IP:$WPPORT/ to finish setting up your WordPress site."
         echo "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
     fi
@@ -1534,7 +1774,7 @@ function main_ols_test
 {
     echoCYAN "Start auto testing >> >> >> >>"
     test_ols_admin
-    if [ "${PURE_DB}" = '1' ]; then 
+    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ]; then 
         test_ols
     elif [ "$INSTALLWORDPRESS" = "1" ] ; then
         if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then
@@ -1584,8 +1824,9 @@ function main
     befor_install_display
     main_init_package
     install_openlitespeed
-    main_set_password
+    main_ols_password
     gen_selfsigned_cert
+    main_pure_db
     main_install_wordpress
     config_server
     restart_lsws
@@ -1623,7 +1864,13 @@ while [ ! -z "${1}" ] ; do
                 ;;
         --pure-mariadb )
                 PURE_DB=1
-                ;;        
+                ;;    
+        --pure-mysql )
+                PURE_MYSQL=1
+                ;;
+        --with-mysql )
+                WITH_MYSQL=1
+                ;;                                  
         -[wW] | --wordpress )      
                 INSTALLWORDPRESS=1
                 ;;
