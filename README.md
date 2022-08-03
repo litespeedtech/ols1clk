@@ -29,6 +29,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      |  `--dbname [DATABASENAME]` |      To set the database name to be used by WordPress.|
 |      |  `--dbuser [DBUSERNAME]`   |      To set the WordPress username in the database.|
 |      |  `--dbpassword [PASSWORD]` |      To set the WordPress table password in MySQL instead of using a random one.|
+|      |  `--prefix [PREFIXNAME]`   |      To set the WordPress table prefix.|
 |      |  `--listenport [PORT]`  |         To set the HTTP server listener port, default is 80.|
 |      |  `--ssllistenport [PORT]` |       To set the HTTPS server listener port, default is 443.|
 |      |  `--wpuser [WP_USER]`   |         To set the WordPress admin user for WordPress dashboard login. Default value is wpuser.|

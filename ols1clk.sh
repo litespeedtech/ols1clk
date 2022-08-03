@@ -33,6 +33,7 @@ MYSQLINSTALLED=
 TESTGETERROR=no
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
+DBPREFIX=wp_
 VERBOSE=0
 PURE_DB=0
 PURE_MYSQL=0
@@ -223,6 +224,7 @@ function usage
     echoW " --dbname [DATABASENAME]           " "To set the database name to be used by WordPress."
     echoW " --dbuser [DBUSERNAME]             " "To set the WordPress username in the database."
     echoW " --dbpassword [PASSWORD]           " "To set the WordPress table password in MySQL instead of using a random one."
+    echoW " --prefix [PREFIXNAME]             " "To set the WordPress table prefix."
     echoW " --listenport [PORT]               " "To set the HTTP server listener port, default is 80."
     echoW " --ssllistenport [PORT]            " "To set the HTTPS server listener port, default is 443."
     echoW " --wpuser [WORDPRESSUSER]          " "To set the WordPress admin user for WordPress dashboard login. Default value is wpuser."
@@ -580,6 +582,7 @@ function create_wordpress_cf
         --dbname=$DATABASENAME \
         --dbuser=$USERNAME \
         --dbpass=$USERPASSWORD \
+        --dbprefix=$DBPREFIX \
         --locale=ro_RO \
         --allow-root \
         --quiet
@@ -1933,6 +1936,11 @@ while [ ! -z "${1}" ] ; do
                 WPLANGUAGE=$FOLLOWPARAM
                 fixLangTypo
                 ;;
+        --prefix )         
+                check_value_follow "$2" "Table Prefix"
+                shift
+                DBPREFIX=$FOLLOWPARAM
+                ;;                
         --sitetitle )       
                 check_value_follow "$2" "WordPress website title"
                 shift
