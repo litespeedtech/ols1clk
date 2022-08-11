@@ -20,8 +20,8 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 | :---: | ---------  | ---  |
 | `-A` |`--adminpassword [PASSWORD]`|      To set the WebAdmin password for OpenLiteSpeed instead of using a random one.|
 | `-E` |`--email [EMAIL]`|                 To set the administrator email.|
-|      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 80. We currently support versions '56 70 71 72 73 74 80'.|
-|      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.5. We currently support versions '10.2 10.3 10.4 10.5 10.6'.|
+|      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 80. We currently support versions '71 72 73 74 80 81'.|
+|      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.9. We currently support versions '10.2 10.3 ...10.9'.|
 | `-W` |`--wordpress`|                     To install WordPress. You will still need to complete the WordPress setup by browser|
 |      |  `--wordpressplus [SITEDOMAIN]`|  To install, set up, and configure WordPress, also LSCache will be enabled|
 |      |  `--wordpresspath [WP_PATH]`|     To specify a location for the new WordPress installation or use for an existing WordPress.|

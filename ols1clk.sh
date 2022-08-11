@@ -57,10 +57,11 @@ USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(71 72 73 74 80 81)
 MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9)
+OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
 LSPHPVER=81
-MARIADBVER=10.6
+MARIADBVER=10.9
 MYSQLVER=8.0
-WEBADMIN_LSPHPVER=73
+WEBADMIN_LSPHPVER=74
 ALLERRORS=0
 TEMPPASSWORD=
 ACTION=INSTALL
@@ -153,6 +154,7 @@ function update_system(){
     if [ "$OSNAME" = "centos" ] ; then
         silent ${YUM} update -y >/dev/null 2>&1
     else
+        disable_needrestart
         silent ${APT} update && ${APT} upgrade -y >/dev/null 2>&1
     fi
 }
@@ -289,7 +291,7 @@ function check_os
             OSNAMEVER=UBUNTU14
             OSVER=trusty
             MARIADBCPUARCH="arch=amd64,i386,ppc64el"
-            ;;
+            ;;        
         xenial)
             OSNAMEVER=UBUNTU16
             OSVER=xenial
@@ -305,20 +307,15 @@ function check_os
             OSVER=focal
             MARIADBCPUARCH="arch=amd64"
             ;;
-        #jammy)            
-        #    OSNAMEVER=UBUNTU22
-        #    OSVER=jammy
-        #    MARIADBCPUARCH="arch=amd64"
-        #    ;;            
+        jammy)            
+            OSNAMEVER=UBUNTU22
+            OSVER=jammy
+            MARIADBCPUARCH="arch=amd64"
+            ;;            
         esac
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
         case $(cat /etc/os-release | grep VERSION_CODENAME | cut -d = -f 2) in
-        wheezy)
-            OSNAMEVER=DEBIAN7
-            OSVER=wheezy
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
         jessie)
             OSNAMEVER=DEBIAN8
             OSVER=jessie
@@ -343,7 +340,7 @@ function check_os
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(7-11) and Ubuntu(14,16,18,20)."
+        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(8-11) and Ubuntu(14,16,18,20,22)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
@@ -551,6 +548,19 @@ function action_purgeall
         purgedatabase
         uninstall_result
         exit 0
+    fi
+}
+
+function disable_needrestart
+{
+    if [ -d /etc/needrestart/conf.d ]; then
+        echoG 'List Restart services only'
+        cat >> /etc/needrestart/conf.d/disable.conf <<END
+# Restart services (l)ist only, (i)nteractive or (a)utomatically. 
+\$nrconf{restart} = 'l'; 
+# Disable hints on pending kernel upgrades. 
+\$nrconf{kernelhints} = 0;         
+END
     fi
 }
 
@@ -789,42 +799,27 @@ function centos_install_mysql
 function debian_install_mariadb
 {
     echoB "${FPACE} - Install software properties"
-    if [ "$OSNAMEVER" = "DEBIAN7" ] ; then
-        silent ${APT} -y -f install python-software-properties
-        silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
-    elif [ "$OSNAMEVER" = "DEBIAN8" ] ; then
+    if [ "$OSNAMEVER" = "DEBIAN8" ]; then
         silent ${APT} -y -f install software-properties-common
-        silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
-    elif [ "$OSNAMEVER" = "DEBIAN9" ] ; then
+    elif [ "$OSNAME" = "debian" ]; then
         silent ${APT} -y -f install software-properties-common gnupg
-        silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
-    elif [ "$OSNAMEVER" = "DEBIAN10" ] ; then
-        silent ${APT} -y -f install software-properties-common gnupg
-        silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
-    elif [ "$OSNAMEVER" = "DEBIAN11" ] ; then
-        silent ${APT} -y -f install software-properties-common gnupg
-        silent apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xF1656F24C74CD1D8
-    elif [ "$OSNAMEVER" = "UBUNTU14" ] ; then
+    elif [ "$OSNAME" = "ubuntu" ]; then
         silent ${APT} -y -f install software-properties-common
-        silent apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db
-    elif [ "$OSNAMEVER" = "UBUNTU16" ] ; then
-        silent ${APT} -y -f install software-properties-common
-        silent apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
-    elif [ "$OSNAMEVER" = "UBUNTU18" ] ; then
-        silent ${APT} -y -f install software-properties-common
-        silent apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8
-    elif [ "$OSNAMEVER" = "UBUNTU20" ] ; then
-        silent ${APT} -y -f install software-properties-common
-        silent apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8    
+    fi
+    MARIADB_KEY='/usr/share/keyrings/mariadb.gpg'
+    wget -q -O- https://mariadb.org/mariadb_release_signing_key.asc | gpg --dearmor > "${MARIADB_KEY}"
+    if [ ! -e "${MARIADB_KEY}" ]; then 
+        echoR "${MARIADB_KEY} does not exist, please check the key, exit!"
+        exit 1
     fi
     echoB "${FPACE} - Add MariaDB repo"
-    if [ -e /etc/apt/sources.list.d/mariadb_repo.list ]; then  
-        grep -Fq  "http://mirror.jaleco.com/mariadb/repo/" /etc/apt/sources.list.d/mariadb_repo.list >/dev/null 2>&1
+    if [ -e /etc/apt/sources.list.d/mariadb.list ]; then  
+        grep -Fq  "mirror.mariadb.org" /etc/apt/sources.list.d/mariadb.list >/dev/null 2>&1
         if [ $? != 0 ] ; then
-            echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list
+            echo "deb [$MARIADBCPUARCH signed-by=${MARIADB_KEY}] http://mirror.mariadb.org/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb.list
         fi
     else 
-        echo "deb [$MARIADBCPUARCH] http://mirror.jaleco.com/mariadb/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb_repo.list    
+        echo "deb [$MARIADBCPUARCH signed-by=${MARIADB_KEY}] http://mirror.mariadb.org/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb.list
     fi
     echoB "${FPACE} - Update packages"
     ${APT} update
@@ -843,13 +838,8 @@ function debian_install_mysql
 {
     echoB "${FPACE} - Install software properties"
     local MYSQL_REPO='/etc/apt/sources.list.d/mysql.list'
-    if [ "$OSNAMEVER" = "DEBIAN7" ] ; then
-        silent ${APT} -y -f install python-software-properties
-        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
-    else
-        silent ${APT} -y -f install software-properties-common
-        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
-    fi
+    silent ${APT} -y -f install software-properties-common
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
     apt-key list 2>&1 | grep MySQL >/dev/null 
     if [ ${?} != 0 ]; then 
         echoY 'Key add failed from keyserver.ubuntu.com, try pgp.mit.edu!'
@@ -1470,15 +1460,17 @@ function read_password
     fi
 }
 
-function check_php_param
+
+function check_dbversion_param
 {
-    if [ "$OSNAMEVER" = "UBUNTU20" ] || [ "$OSNAMEVER" = "UBUNTU18" ] || [ "$OSNAMEVER" = "DEBIAN9" ] || [ "$OSNAMEVER" = "DEBIAN10" ] || [ "$OSNAMEVER" = "DEBIAN11" ]; then
-        if [ "$LSPHPVER" = "56" ]; then
-            echoY "We do not support lsphp$LSPHPVER on $OSNAMEVER, lsphp73 will be used instead."
-            LSPHPVER=73
-        fi
+    if [ "$OSNAMEVER" = "DEBIAN8" ] || [ "$OSNAMEVER" = "UBUNTU14" ] || [ "$OSNAMEVER" = "UBUNTU16" ]; then
+        if [ "$MARIADBVER" != '10.2' -o "$MARIADBVER" != '10.3' -o "$MARIADBVER" != '10.4' -o "$MARIADBVER" != '10.5'] ; then 
+            echoY "We do not support "$MARIADBVER" on $OSNAMEVER, 10.5 will be used instead."
+            MARIADBVER=10.5
+        fi                 
     fi
 }
+
 
 function check_value_follow
 {
@@ -1805,7 +1797,7 @@ function main_init_check
     check_root
     check_os
     check_cur_status
-    check_php_param
+    check_dbversion_param
 }
 
 function main_init_package
@@ -1863,7 +1855,7 @@ while [ ! -z "${1}" ] ; do
                 cnt=${#MARIADBVERLIST[@]}
                 for (( i = 0 ; i < cnt ; i++ )); do 
                     if [ "$1" = "${MARIADBVERLIST[$i]}" ] ; then MARIADBVER=$1; fi 
-                done
+                done                    
                 ;;
         --pure-mariadb )
                 PURE_DB=1
