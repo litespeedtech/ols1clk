@@ -832,7 +832,7 @@ function debian_install_mariadb
     fi
     echoB "${FPACE} - Start MariaDB"
     service mysql start
-    if [ ${?} != 0 ]; 
+    if [ ${?} != 0 ]; then
         service mariadb start
     fi
 }
