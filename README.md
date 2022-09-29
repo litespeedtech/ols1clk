@@ -37,6 +37,9 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      |   `--wplang [WP_LANGUAGE]` |      To set the WordPress language. Default value is "en_US" for English.|
 |      |   `--sitetitle [WP_TITLE]` |      To set the WordPress site title. Default value is mySite.|
 |      |   `--pure-mariadb`|               To install OpenLiteSpeed and MariaDB.|
+|      |   `--with-mysql`  |               To install OpenLiteSpeed/App with MySQL.|
+|      |   `--proxy-r`  |                  To set a proxy with rewrite type.|
+|      |   `--proxy-c`  |                  To set a proxy with config type.|
 | `-U` |   `--uninstall`  |                To uninstall OpenLiteSpeed and remove installation directory.|
 | `-P` |   `--purgeall`   |                To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL.|
 | `-Q` |   `--quiet`      |                To use quiet mode, won't prompt to input anything.|
@@ -74,7 +77,7 @@ Then run the following command to create an additional virtual host with Wordpre
 ```
 
 ### How to I create additional Virtual Hosts and LE certificate from console?
-The first time you do this, you will need to install [certbot](https://certbot.eff.org/) on your system. Use `apt-get -y install certbot` for Ubuntu 20.04. 
+The first time you do this, you will need to install [certbot](https://certbot.eff.org/) on your system. Use `apt-get -y install certbot` for Ubuntu. 
 
 Please be sure that your domain is already pointing to the server.
 

@@ -28,6 +28,7 @@ OSTYPE=$(uname -m)
 MARIADBCPUARCH=
 SERVER_ROOT=/usr/local/lsws
 WEBCF="$SERVER_ROOT/conf/httpd_config.conf"
+EXAMPLE_VHOSTCONF="$SERVER_ROOT/conf/vhosts/Example/vhconf.conf"
 OLSINSTALLED=
 MYSQLINSTALLED=
 TESTGETERROR=no
@@ -38,6 +39,9 @@ VERBOSE=0
 PURE_DB=0
 PURE_MYSQL=0
 WITH_MYSQL=0
+PROXY=0
+PROXY_TYPE=''
+PROXY_SERVER='http://127.0.0.1:8080'
 WORDPRESSPATH=$SERVER_ROOT/wordpress
 PWD_FILE=$SERVER_ROOT/password
 WPPORT=80
@@ -236,6 +240,8 @@ function usage
     echoW " --pure-mariadb                    " "To install OpenLiteSpeed and MariaDB"
     echoW " --pure-mysql                      " "To install OpenLiteSpeed and MySQL"
     echoW " --with-mysql                      " "To install OpenLiteSpeed/App with MySQL"
+    echoW " --proxy-r                         " "To set a proxy with rewrite type."
+    echoW " --proxy-c                         " "To set a proxy with config type."
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
     echoNW "  -P,    --purgeall               " "${EPACE} To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL."
     echoNW "  -Q,    --quiet                  " "${EPACE} To use quiet mode, won't prompt to input anything."
@@ -1296,6 +1302,18 @@ END
         fi
         echo ols1clk > "$SERVER_ROOT/PLAT"
     fi
+    if [ ${PROXY} = '1' ]; then
+        cat >> ${WEBCF} <<END
+extprocessor proxy-http {
+  type                    proxy
+  address                 ${PROXY_SERVER}
+  maxConns                100
+  initTimeout             60
+  retryTimeout            0
+  respBuffer              0
+}
+END
+    fi
     sed -i s"|lsphp.*/bin/lsphp|lsphp${LSPHPVER}/bin/lsphp|g" ${WEBCF}
 }
 
@@ -1388,7 +1406,7 @@ END
 
 function activate_cache
 {
-    cat > $WORDPRESSPATH/activate_cache.php <<END
+    cat >> $WORDPRESSPATH/activate_cache.php <<END
 <?php
 include '$WORDPRESSPATH/wp-load.php';
 include_once '$WORDPRESSPATH/wp-admin/includes/plugin.php';
@@ -1401,6 +1419,38 @@ END
     rm $WORDPRESSPATH/activate_cache.php
 }
 
+function set_proxy_vh
+{
+    if [ ${PROXY} = '1' ]; then
+        echoG 'Set proxy in Example virtual host config.'
+        if [ ${PROXY_TYPE} = 'r' ]; then 
+            proxy_vh_rewrite
+        elif [ ${PROXY_TYPE} = 'c' ]; then 
+            proxy_vh_context
+        else
+            echoY "PROXY_TYPE: ${PROXY_TYPE} is not found, will use rewrite type!"
+            proxy_vh_rewrite
+        fi    
+    fi
+}
+
+function proxy_vh_rewrite
+{
+    sed -i 's/enable[[:blank:]]*0$/enable                  1/g' ${EXAMPLE_VHOSTCONF}
+    sed -i '/^rewrite.*/a \ \ rules                   REWRITERULE ^(.*)$ HTTP://proxy-http/$1 [P,L,E=PROXY-HOST:WWW.EXAMPLE.COM]' ${EXAMPLE_VHOSTCONF}
+}
+
+function proxy_vh_context
+{
+    sed -i 's|context / {|context /static/ {|g' ${EXAMPLE_VHOSTCONF}
+    cat > ${EXAMPLE_VHOSTCONF} <<END
+context / {
+  type                    proxy
+  handler                 proxy-http
+  addDefaultCharset       off
+}
+END
+}
 
 function check_cur_status
 {
@@ -1722,7 +1772,14 @@ function after_install_display
     fi
     if [ "$INSTALLWORDPRESSPLUS" = "0" ] && [ "$INSTALLWORDPRESS" = "1" ] && [ "${PURE_DB}" = '0' ] && [ "${PURE_MYSQL}" = '0' ]; then
         echo "Please access http://server_IP:$WPPORT/ to finish setting up your WordPress site."
-        echo "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
+        echo "Also, you may want to activate the LiteSpeed Cache plugin to get better performance."
+    fi
+    if [ "${PROXY_TYPE}" = 'r' ]; then
+        echo "Please substitute the Default proxy address [${PROXY_SERVER}] and domain [WWW.EXAMPLE.COM] with your own value. More,"
+        echoB "https://docs.openlitespeed.org/docs/advanced/proxy"
+    elif [ "${PROXY_TYPE}" = 'c' ]; then
+        echo "Please substitute the Default proxy address [${PROXY_SERVER}] with your own value."
+        echo "More, https://docs.openlitespeed.org/docs/advanced/proxy"
     fi
     echoCYAN 'End OpenLiteSpeed one click installation << << << << << << <<'
     echo
@@ -1749,20 +1806,32 @@ function test_ols_admin
 
 function test_ols
 {
-    test_page http://localhost:$WPPORT/  Congratulation "test Example HTTP vhost page"
-    test_page https://localhost:$SSLWPPORT/  Congratulation "test Example HTTPS vhost page"
+    if [ ${PROXY} = 0 ]; then
+        test_page http://localhost:$WPPORT/  Congratulation "test Example HTTP vhost page"
+        test_page https://localhost:$SSLWPPORT/  Congratulation "test Example HTTPS vhost page"
+    else
+        echoG 'Proxy is on, skip the test!'
+    fi    
 }
 
 function test_wordpress
 {
-    test_page http://localhost:8088/  Congratulation "test Example vhost page"
+    if [ ${PROXY} = 0 ]; then
+        test_page http://localhost:8088/  Congratulation "test Example vhost page"
+    else
+        echoG 'Proxy is on, skip the test!'
+    fi      
     test_page http://localhost:$WPPORT/ "WordPress" "test wordpress HTTP first page"
     test_page https://localhost:$SSLWPPORT/ "WordPress" "test wordpress HTTPS first page"
 }
 
 function test_wordpress_plus
 {
-    test_page http://localhost:8088/  Congratulation "test Example vhost page"
+    if [ ${PROXY} = 0 ]; then
+        test_page http://localhost:8088/  Congratulation "test Example vhost page"
+    else
+        echoG 'Proxy is on, skip the test!'
+    fi        
     test_page http://$SITEDOMAIN:$WPPORT/ WordPress "test wordpress HTTP first page"
     test_page https://$SITEDOMAIN:$SSLWPPORT/ WordPress "test wordpress HTTPS first page"
 }
@@ -1827,6 +1896,7 @@ function main
     main_pure_db
     main_install_wordpress
     config_server
+    set_proxy_vh
     restart_lsws
     after_install_display
     main_ols_test
@@ -1941,6 +2011,17 @@ while [ ! -z "${1}" ] ; do
                 shift
                 WPTITLE=$FOLLOWPARAM
                 ;;
+        -[Uu] | --uninstall )       
+                ACTION=UNINSTALL
+                ;;
+        --proxy-r )
+                PROXY=1
+                PROXY_TYPE='r'
+                ;;     
+        --proxy-c )
+                PROXY=1
+                PROXY_TYPE='c'
+                ;;                                            
         -[Uu] | --uninstall )       
                 ACTION=UNINSTALL
                 ;;
