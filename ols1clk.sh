@@ -1443,7 +1443,7 @@ function proxy_vh_rewrite
 function proxy_vh_context
 {
     sed -i 's|context / {|context /static/ {|g' ${EXAMPLE_VHOSTCONF}
-    cat > ${EXAMPLE_VHOSTCONF} <<END
+    cat >> ${EXAMPLE_VHOSTCONF} <<END
 context / {
   type                    proxy
   handler                 proxy-http
