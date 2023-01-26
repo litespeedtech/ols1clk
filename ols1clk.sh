@@ -59,10 +59,10 @@ ADMINPASSWORD=
 ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
-LSPHPVERLIST=(71 72 73 74 80 81)
+LSPHPVERLIST=(71 72 73 74 80 81 82)
 MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9)
 OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
-LSPHPVER=81
+LSPHPVER=82
 MARIADBVER=10.9
 MYSQLVER=8.0
 WEBADMIN_LSPHPVER=74
@@ -221,7 +221,7 @@ function usage
     echo -e "\033[1mOPTIONS\033[0m"
     echoNW "  -A,    --adminpassword [PASSWORD]" "${EPACE}To set the WebAdmin password for OpenLiteSpeed instead of using a random one."
     echoNW "  -E,    --email [EMAIL]          " "${EPACE} To set the administrator email."
-    echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 81. We currently support versions '${LSPHPVERLIST[@]}'."
+    echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 82. We currently support versions '${LSPHPVERLIST[@]}'."
     echoW " --mariadbver [VERSION]            " "To set MariaDB version, such as 10.6. We currently support versions '${MARIADBVERLIST[@]}'."
     echoNW "  -W,    --wordpress              " "${EPACE} To install WordPress. You will still need to complete the WordPress setup by browser"
     echoW " --wordpressplus [SITEDOMAIN]      " "To install, setup, and configure WordPress, also LSCache will be enabled"
