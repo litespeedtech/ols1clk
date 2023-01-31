@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2022 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2023 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -38,7 +38,9 @@ DBPREFIX=wp_
 VERBOSE=0
 PURE_DB=0
 PURE_MYSQL=0
+PURE_PERCONA=0
 WITH_MYSQL=0
+WITH_PERCONA=0
 PROXY=0
 PROXY_TYPE=''
 PROXY_SERVER='http://127.0.0.1:8080'
@@ -65,6 +67,7 @@ OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
 LSPHPVER=81
 MARIADBVER=10.9
 MYSQLVER=8.0
+PERCONAVER=80
 WEBADMIN_LSPHPVER=74
 ALLERRORS=0
 TEMPPASSWORD=
@@ -239,7 +242,9 @@ function usage
     echoW " --sitetitle [WP_TITLE]            " "To set the WordPress site title. Default value is mySite."
     echoW " --pure-mariadb                    " "To install OpenLiteSpeed and MariaDB"
     echoW " --pure-mysql                      " "To install OpenLiteSpeed and MySQL"
+    echoW " --pure-percona                    " "To install OpenLiteSpeed and Percona"
     echoW " --with-mysql                      " "To install OpenLiteSpeed/App with MySQL"
+    echoW " --with-percona                    " "To install OpenLiteSpeed/App with Percona"
     echoW " --proxy-r                         " "To set a proxy with rewrite type."
     echoW " --proxy-c                         " "To set a proxy with config type."
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
@@ -263,8 +268,8 @@ function usage
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 3.0                      *'
-    echoY '*                    Copyright (C) 2016 - 2022 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Open LiteSpeed One click installation, Version 3.1                      *'
+    echoY '*                    Copyright (C) 2016 - 2023 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -802,6 +807,17 @@ function centos_install_mysql
     service mysqld start 2>/dev/null
 }
 
+function centos_install_percona
+{
+
+    echoB "${FPACE} - Add Percona repo"
+    silent ${YUM} install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+    echoB "${FPACE} - Enable Percona repo"
+    percona-release setup ps${PERCONAVER} -y >/dev/null 2>&1
+    silent ${YUM} install -y percona-server-server
+    service mysqld start 2>/dev/null
+}    
+
 function debian_install_mariadb
 {
     echoB "${FPACE} - Install software properties"
@@ -882,6 +898,26 @@ function debian_install_mysql
     echoB "${FPACE} - Start Mysql"
     service mysql start
 }
+
+function debian_install_percona
+{
+    echoB "${FPACE} - Install software properties"
+    curl -sO https://repo.percona.com/apt/percona-release_latest.generic_all.deb
+    silent ${APT} -y -f install gnupg2 lsb-release ./percona-release_latest.generic_all.deb
+
+    echoB "${FPACE} - Update packages"
+    ${APT} update
+    echoB "${FPACE} - Install Percona"
+    percona-release setup ps${PERCONAVER} > /dev/null 2>&1
+    DEBIAN_FRONTEND=noninteractive apt-get -y install percona-server-server > /dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "An error occured during installation of Percona. Please fix this error and try again."
+        echoR "You may want to manually run the command 'apt-get -y -f --allow-unauthenticated install percona-server' to check. Aborting installation!"
+        exit 1
+    fi
+    echoB "${FPACE} - Start Percona"
+    service mysql start
+}    
 
 function install_mariadb
 {
@@ -1014,6 +1050,72 @@ function install_mysql
     echoG "End Install MySQL"
 }
 
+function install_percona
+{
+    echoG "Start Install Percona"
+    if [ "$OSNAME" = 'centos' ] ; then
+        centos_install_percona
+    else
+        debian_install_percona
+    fi
+    if [ $? != 0 ] ; then
+        echoR "An error occured when starting the Percona service. "
+        echoR "Please fix this error and try again. Aborting installation!"
+        exit 1
+    fi
+    echoB "${FPACE} - Set Percona root"
+    if [ "$OSNAME" = 'centos' ] ; then
+        TMP_LOG_ROOT_PASS=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}')
+        mysqladmin -uroot -p$TMP_LOG_ROOT_PASS password $ROOTPASSWORD 2>/dev/null
+    fi        
+    mysql -uroot -p${ROOTPASSWORD} -e 'status' >/dev/null 2>&1
+    if [ $? = 0 ] ; then
+        CURROOTPASSWORD=$ROOTPASSWORD
+    else
+        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD 2>/dev/null
+        if [ $? = 0 ] ; then
+            CURROOTPASSWORD=$ROOTPASSWORD
+        else
+            echoR "Failed to set MySQL root password to $ROOTPASSWORD, it may already have a root password."
+            printf '\033[31mInstallation must know the password for the next step.\033[0m'
+            test_mysql_password
+
+            if [ "$TESTPASSWORDERROR" = "1" ] ; then
+                echoY "If you forget your password you may stop the mysqld service and run the following command to reset it,"
+                echoY "mysqld_safe --skip-grant-tables &"
+                echoY "mysql --user=root mysql"
+                echoY "update user set Password=PASSWORD('new-password') where user='root'; flush privileges; exit; "
+                echoR "Aborting installation."
+                echo
+                exit 1
+            fi
+
+            if [ "$CURROOTPASSWORD" != "$ROOTPASSWORD" ] ; then
+                echoY "Current Percona root password is $CURROOTPASSWORD, it will be changed to $ROOTPASSWORD."
+                printf '\033[31mDo you still want to change it?[y/N]\033[0m '
+                read answer
+                echo
+
+                if [ "$answer" != "Y" ] && [ "$answer" != "y" ] ; then
+                    echoG "OK, Percona root password not changed."
+                    ROOTPASSWORD=$CURROOTPASSWORD
+                else
+                    mysqladmin -uroot -p$CURROOTPASSWORD password $ROOTPASSWORD
+                    if [ $? = 0 ] ; then
+                        echoG "OK, Percona root password changed to $ROOTPASSWORD."
+                    else
+                        echoR "Failed to change Percona root password, it is still $CURROOTPASSWORD."
+                        ROOTPASSWORD=$CURROOTPASSWORD
+                    fi
+                fi
+            fi
+        fi
+    fi
+    save_db_root_pwd
+    echoG "End Install Percona"
+
+}    
+
 function setup_mariadb_user
 {
     echoG "Start setup MariaDB"
@@ -1102,6 +1204,51 @@ function setup_mysql_user
     echoG "End setup mysql"
 }
 
+function setup_percona_user
+{
+    echoG "Start setup Percona"
+    local ERROR=
+    #delete user if exists
+    mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 2>/dev/null
+
+    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user" 2>/dev/null` | grep "$USERNAME" >/dev/null
+    if [ $? = 0 ] ; then
+        echoG "user $USERNAME exists in mysql.user"
+    else
+        mysql -uroot -p$ROOTPASSWORD  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';" 2>/dev/null
+        if [ $? = 0 ] ; then
+            mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost;" 2>/dev/null
+        else
+            echoR "Failed to create MySQL user $USERNAME. This user may already exist. If it does not, another problem occured."
+            echoR "Please check this and update the wp-config.php file."
+            ERROR="Create user error"
+        fi
+    fi
+
+    mysql -uroot -p$ROOTPASSWORD  -e "CREATE DATABASE IF NOT EXISTS $DATABASENAME;" 2>/dev/null
+    if [ $? = 0 ] ; then
+        mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON $DATABASENAME.* TO '$USERNAME'@localhost;" 2>/dev/null
+    else
+        echoR "Failed to create database $DATABASENAME. It may already exist. If it does not, another problem occured."
+        echoR "Please check this and update the wp-config.php file."
+        if [ "x$ERROR" = "x" ] ; then
+            ERROR="Create database error"
+        else
+            ERROR="$ERROR and create database error"
+        fi
+    fi
+    mysql -uroot -p$ROOTPASSWORD  -e "flush privileges;" 2>/dev/null
+
+    if [ "x$ERROR" = "x" ] ; then
+        echoG "Finished Percona setup without error."
+    else
+        echoR "Finished Percona setup - some error(s) occured."
+    fi
+    save_db_user_pwd
+    echoG "End setup Percona"
+
+}    
+
 function resetmysqlroot
 {
     if [ "x$OSNAMEVER" = "xCENTOS8" ]; then
@@ -1176,6 +1323,16 @@ function pure_mysql
         ROOTPASSWORD=$CURROOTPASSWORD
     else
         echoG 'MySQL already exist, skip!'
+    fi
+}
+
+function pure_percona
+{
+    if [ "$MYSQLINSTALLED" = "0" ] ; then
+        install_percona
+        ROOTPASSWORD=$CURROOTPASSWORD
+    else
+        echoG 'PERCONA already exist, skip!'
     fi
 }
 
@@ -1617,11 +1774,16 @@ function befor_install_display
     echoY "WebAdmin password:        " "$ADMINPASSWORD"
     echoY "WebAdmin email:           " "$EMAIL"
     echoY "LSPHP version:            " "$LSPHPVER"
-    if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ]; then 
+    if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ] && [ "${WITH_PERCONA}" = 0 ] && [ "${PURE_PERCONA}" = 0 ]; then 
         echoY "MariaDB version:          " "$MARIADBVER"
     elif [ "${PURE_MYSQL}" = 1 ]; then 
         echoY "MySQL version:            " "$MYSQLVER"
         echoY "MySQL root Password:      " "$ROOTPASSWORD"
+    elif [ "${PURE_PERCONA}" = 1 ]; then 
+        echoY "PERCONA version:          " "$PERCONAVER"
+        echoY "PERCONA root Password:    " "$ROOTPASSWORD"        
+    elif [ "${WITH_PERCONA}" = 1 ]; then 
+        echoY "PERCONA version:          " "$PERCONAVER"     
     elif [ "${WITH_MYSQL}" = 1 ]; then   
         echoY "MySQL version:            " "$MYSQLVER"
     fi
@@ -1661,7 +1823,7 @@ function befor_install_display
     echoNW "Your password will be written to file:  ${PWD_FILE}"
     echo 
     if [ "$FORCEYES" != "1" ] ; then
-        printf 'Are these settings correct? Type n to quit, otherwise will continue. [Y/n]'
+        printf 'Are these settings correct? Type n to quit, otherwise will continue. [Y/n]  '
         read answer
         if [ "$answer" = "N" ] || [ "$answer" = "n" ] ; then
             echoG "Aborting installation!"
@@ -1705,12 +1867,15 @@ function main_pure_db
     elif [ "${PURE_MYSQL}" = '1' ]; then 
         echoG 'Install MySQL only'
         pure_mysql
+    elif [ "${PURE_PERCONA}" = '1' ]; then
+        echoG 'Install Percona only'
+        pure_percona
     fi    
 }
 
 function main_install_wordpress
 {
-    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ]; then 
+    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ]; then 
         echoG 'Skip WordPress setup.'
     else
         if [ "$WORDPRESSINSTALLED" = '1' ] ; then
@@ -1721,11 +1886,13 @@ function main_install_wordpress
                 config_vh_wp
                 check_port_usage
                 if [ "$MYSQLINSTALLED" != "1" ] ; then
-                    if [ "${WITH_MYSQL}" = '0' ]; then 
-                        install_mariadb
-                    else    
+                    if [ "${WITH_MYSQL}" = '1' ]; then 
                         install_mysql
-                    fi    
+                    elif [ "${WITH_PERCONA}" = '1' ]; then 
+                        install_percona                      
+                    else
+                        install_mariadb
+                    fi
                 else
                     test_mysql_password
                 fi
@@ -1733,10 +1900,12 @@ function main_install_wordpress
                     echoY "MySQL setup bypassed, can not get root password."
                 else
                     ROOTPASSWORD=$CURROOTPASSWORD
-                    if [ "${WITH_MYSQL}" = '0' ]; then
-                        setup_mariadb_user
-                    else 
+                    if [ "${WITH_MYSQL}" = '1' ]; then
                         setup_mysql_user
+                    elif [ "${WITH_PERCONA}" = '1' ]; then
+                        setup_percona_user                        
+                    else 
+                        setup_mariadb_user
                     fi    
                 fi
                 download_wordpress
@@ -1936,9 +2105,15 @@ while [ ! -z "${1}" ] ; do
         --pure-mysql )
                 PURE_MYSQL=1
                 ;;
+        --pure-percona )
+                PURE_PERCONA=1
+                ;;                
         --with-mysql )
                 WITH_MYSQL=1
-                ;;                                  
+                ;;
+        --with-percona )
+                WITH_PERCONA=1
+                ;;                                        
         -[wW] | --wordpress )      
                 INSTALLWORDPRESS=1
                 ;;

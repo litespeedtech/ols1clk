@@ -4,7 +4,7 @@
 [<img src="https://img.shields.io/twitter/follow/litespeedtech.svg?label=Follow&style=social">](https://twitter.com/litespeedtech)
 ## Description
 
-ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-W** parameter that will install WordPress at the same time but it must still be configured through the wp-config.php page. A MariaDB database can also be set up using this script if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** parameter. To completely install WordPress with your OpenLiteSpeed installation, skipping the need for the wp-config.php page, use the **--wordpressplus** flag. This can be used with **--wpuser**, **--wppassword**, **--wplang**, and **--sitetitle** to configure each of the settings normally set by wp-config.php.
+ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-W** parameter that will install WordPress at the same time but it must still be configured through the wp-config.php page. By default, a MariaDB database will be set up using this script, you can also specify other DB if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** parameter. To completely install WordPress with your OpenLiteSpeed installation, skipping the need for the wp-config.php page, use the **--wordpressplus** flag. This can be used with **--wpuser**, **--wppassword**, **--wplang**, and **--sitetitle** to configure each of the settings normally set by wp-config.php.
 
 ## Running ols1clk
 
@@ -37,7 +37,10 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      |   `--wplang [WP_LANGUAGE]` |      To set the WordPress language. Default value is "en_US" for English.|
 |      |   `--sitetitle [WP_TITLE]` |      To set the WordPress site title. Default value is mySite.|
 |      |   `--pure-mariadb`|               To install OpenLiteSpeed and MariaDB.|
+|      |   `--pure-mysql`|                 To install OpenLiteSpeed and MySQL.|
+|      |   `--pure-percona`|               To install OpenLiteSpeed and Percona.|
 |      |   `--with-mysql`  |               To install OpenLiteSpeed/App with MySQL.|
+|      |   `--with-percona`  |             To install OpenLiteSpeed/App with Percona.|
 |      |   `--proxy-r`  |                  To set a proxy with rewrite type.|
 |      |   `--proxy-c`  |                  To set a proxy with config type.|
 | `-U` |   `--uninstall`  |                To uninstall OpenLiteSpeed and remove installation directory.|
@@ -52,7 +55,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |    Examples    | Description|
 |---|---|
 |      `./ols1clk.sh`                       |To install OpenLiteSpeed with a random WebAdmin password.|
-|      `./ols1clk.sh --lsphp 80 `           |To install OpenLiteSpeed with lsphp80.|
+|      `./ols1clk.sh --lsphp 81 `           |To install OpenLiteSpeed with lsphp80.|
 |      `./ols1clk.sh -A 123456 -e a@cc.com` |To install OpenLiteSpeed with WebAdmin password  "123456" and email a@cc.com.|
 |      `./ols1clk.sh -R 123456 -W `         |To install OpenLiteSpeed with WordPress and MySQL root password "123456".|
 |      `./ols1clk.sh --wordpressplus a.com` |To install OpenLiteSpeed with a fully configured WordPress installation at "a.com".|
