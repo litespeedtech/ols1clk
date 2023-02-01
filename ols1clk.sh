@@ -57,6 +57,7 @@ WPUSER=wpuser
 WPTITLE=MySite
 SITEDOMAIN=*
 EMAIL=
+ADMINUSER='admin'
 ADMINPASSWORD=
 ROOTPASSWORD=
 USERPASSWORD=
@@ -222,6 +223,7 @@ function restart_lsws
 function usage
 {
     echo -e "\033[1mOPTIONS\033[0m"
+    echoNW "  --adminuser [PASSWORD]"         "${EPACE}To set the WebAdmin username for OpenLiteSpeed instead of admin."
     echoNW "  -A,    --adminpassword [PASSWORD]" "${EPACE}To set the WebAdmin password for OpenLiteSpeed instead of using a random one."
     echoNW "  -E,    --email [EMAIL]          " "${EPACE} To set the administrator email."
     echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 82. We currently support versions '${LSPHPVERLIST[@]}'."
@@ -1423,7 +1425,7 @@ function set_ols_password
 {
     ENCRYPT_PASS=`"$SERVER_ROOT/admin/fcgi-bin/admin_php" -q "$SERVER_ROOT/admin/misc/htpasswd.php" $ADMINPASSWORD`
     if [ $? = 0 ] ; then
-        echo "admin:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
+        echo "${ADMINUSER}:$ENCRYPT_PASS" > "$SERVER_ROOT/admin/conf/htpasswd"
         if [ $? = 0 ] ; then
             echoG "Set OpenLiteSpeed Web Admin access."
         else
@@ -1771,6 +1773,7 @@ function befor_install_display
 {
     echo
     echoCYAN "Starting to install OpenLiteSpeed to $SERVER_ROOT/ with the parameters below,"
+    echoY "WebAdmin username:        " "$ADMINUSER"
     echoY "WebAdmin password:        " "$ADMINPASSWORD"
     echoY "WebAdmin email:           " "$EMAIL"
     echoY "LSPHP version:            " "$LSPHPVER"
@@ -2073,6 +2076,11 @@ function main
 
 while [ ! -z "${1}" ] ; do
     case "${1}" in
+        --adminuser )  
+                check_value_follow "$2" ""
+                if [ ! -z "$FOLLOWPARAM" ] ; then shift; fi
+                ADMINUSER=$FOLLOWPARAM
+                ;;
         -[aA] | --adminpassword )  
                 check_value_follow "$2" ""
                 if [ ! -z "$FOLLOWPARAM" ] ; then shift; fi
@@ -2197,9 +2205,6 @@ while [ ! -z "${1}" ] ; do
                 PROXY=1
                 PROXY_TYPE='c'
                 ;;                                            
-        -[Uu] | --uninstall )       
-                ACTION=UNINSTALL
-                ;;
         -[Pp] | --purgeall )        
                 ACTION=PURGEALL
                 ;;

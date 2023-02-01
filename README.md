@@ -18,6 +18,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 ### Options:
 |  Opt |    Options    | Description|
 | :---: | ---------  | ---  |
+|      |`--adminuser [PASSWORD]`|          To set the WebAdmin username for OpenLiteSpeed instead of admin.|
 | `-A` |`--adminpassword [PASSWORD]`|      To set the WebAdmin password for OpenLiteSpeed instead of using a random one.|
 | `-E` |`--email [EMAIL]`|                 To set the administrator email.|
 |      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 82. We currently support versions '71 72 73 74 80 81 82'.|
