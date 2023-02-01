@@ -58,6 +58,7 @@ WPTITLE=MySite
 SITEDOMAIN=*
 EMAIL=
 ADMINUSER='admin'
+ADMINPORT='7080'
 ADMINPASSWORD=
 ROOTPASSWORD=
 USERPASSWORD=
@@ -223,8 +224,9 @@ function restart_lsws
 function usage
 {
     echo -e "\033[1mOPTIONS\033[0m"
-    echoNW "  --adminuser [PASSWORD]"         "${EPACE}To set the WebAdmin username for OpenLiteSpeed instead of admin."
+    echoW " --adminuser [PASSWORD]"           "${EPACE}    To set the WebAdmin username for OpenLiteSpeed instead of admin."
     echoNW "  -A,    --adminpassword [PASSWORD]" "${EPACE}To set the WebAdmin password for OpenLiteSpeed instead of using a random one."
+    echoW " --adminport [PASSWORD]"           "${EPACE}    To set the WebAdmin console port number instead of 7080."
     echoNW "  -E,    --email [EMAIL]          " "${EPACE} To set the administrator email."
     echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 82. We currently support versions '${LSPHPVERLIST[@]}'."
     echoW " --mariadbver [VERSION]            " "To set MariaDB version, such as 10.6. We currently support versions '${MARIADBVERLIST[@]}'."
@@ -1474,6 +1476,10 @@ extprocessor proxy-http {
 END
     fi
     sed -i s"|lsphp.*/bin/lsphp|lsphp${LSPHPVER}/bin/lsphp|g" ${WEBCF}
+
+    if [ ${ADMINPORT} != 7080 ]; then
+        config_admin_port
+    fi
 }
 
 function config_vh_wp
@@ -1560,6 +1566,16 @@ END
     fi
     echo ols1clk > "$SERVER_ROOT/PLAT"
     echoG 'End setup virtual host config'
+}
+
+function config_admin_port
+{
+    echoG 'Start updating web admin port number'
+    if [ -e ${SERVER_ROOT}/admin/conf/admin_config.conf ]; then 
+        sed -i "s/7080/${ADMINPORT}/g" ${SERVER_ROOT}/admin/conf/admin_config.conf
+    else
+        echoR "${SERVER_ROOT}/admin/conf/admin_config.conf is not found, skip!"
+    fi        
 }
 
 
@@ -1773,12 +1789,15 @@ function befor_install_display
 {
     echo
     echoCYAN "Starting to install OpenLiteSpeed to $SERVER_ROOT/ with the parameters below,"
+    echoY "WebAdmin Console URL:     " "https://$(curl -s http://checkip.amazonaws.com || printf "0.0.0.0"):$ADMINPORT"
     echoY "WebAdmin username:        " "$ADMINUSER"
     echoY "WebAdmin password:        " "$ADMINPASSWORD"
     echoY "WebAdmin email:           " "$EMAIL"
     echoY "LSPHP version:            " "$LSPHPVER"
     if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ] && [ "${WITH_PERCONA}" = 0 ] && [ "${PURE_PERCONA}" = 0 ]; then 
-        echoY "MariaDB version:          " "$MARIADBVER"
+        if [ ${INSTALLWORDPRESS} = 1 ]; then
+            echoY "MariaDB version:          " "$MARIADBVER"
+        fi
     elif [ "${PURE_MYSQL}" = 1 ]; then 
         echoY "MySQL version:            " "$MYSQLVER"
         echoY "MySQL root Password:      " "$ROOTPASSWORD"
@@ -1973,7 +1992,7 @@ function test_page
 
 function test_ols_admin
 {
-    test_page https://localhost:7080/ "LiteSpeed WebAdmin" "test webAdmin page"
+    test_page https://localhost:${ADMINPORT}/ "LiteSpeed WebAdmin" "test webAdmin page"
 }
 
 function test_ols
@@ -2086,6 +2105,11 @@ while [ ! -z "${1}" ] ; do
                 if [ ! -z "$FOLLOWPARAM" ] ; then shift; fi
                 ADMINPASSWORD=$FOLLOWPARAM
                 ;;
+        --adminport )  
+                check_value_follow "$2" ""
+                if [ ! -z "$FOLLOWPARAM" ] ; then shift; fi
+                ADMINPORT=$FOLLOWPARAM
+                ;;                
         -[eE] | --email )          
                 check_value_follow "$2" "email address"
                 shift
