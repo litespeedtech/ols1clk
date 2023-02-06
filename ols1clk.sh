@@ -224,9 +224,9 @@ function restart_lsws
 function usage
 {
     echo -e "\033[1mOPTIONS\033[0m"
-    echoW " --adminuser [PASSWORD]"           "${EPACE}    To set the WebAdmin username for OpenLiteSpeed instead of admin."
+    echoW " --adminuser [USERNAME]"           "${EPACE}    To set the WebAdmin username for OpenLiteSpeed instead of admin."
     echoNW "  -A,    --adminpassword [PASSWORD]" "${EPACE}To set the WebAdmin password for OpenLiteSpeed instead of using a random one."
-    echoW " --adminport [PASSWORD]"           "${EPACE}    To set the WebAdmin console port number instead of 7080."
+    echoW " --adminport [PORTNUMBER]"           "${EPACE}    To set the WebAdmin console port number instead of 7080."
     echoNW "  -E,    --email [EMAIL]          " "${EPACE} To set the administrator email."
     echoW " --lsphp [VERSION]                 " "To set the LSPHP version, such as 82. We currently support versions '${LSPHPVERLIST[@]}'."
     echoW " --mariadbver [VERSION]            " "To set MariaDB version, such as 10.6. We currently support versions '${MARIADBVERLIST[@]}'."

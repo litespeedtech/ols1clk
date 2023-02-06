@@ -18,9 +18,9 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 ### Options:
 |  Opt |    Options    | Description|
 | :---: | ---------  | ---  |
-|      |`--adminuser [PASSWORD]`|          To set the WebAdmin username for OpenLiteSpeed instead of admin.|
+|      |`--adminuser [USERNAME]`|          To set the WebAdmin username for OpenLiteSpeed instead of admin.|
 | `-A` |`--adminpassword [PASSWORD]`|      To set the WebAdmin password for OpenLiteSpeed instead of using a random one.|
-|      |`--adminport [PASSWORD]`|          To set the WebAdmin console port number instead of 7080.|
+|      |`--adminport [PORTNUMBER]`|          To set the WebAdmin console port number instead of 7080.|
 | `-E` |`--email [EMAIL]`|                 To set the administrator email.|
 |      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 82. We currently support versions '71 72 73 74 80 81 82'.|
 |      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.9. We currently support versions '10.2 10.3 ...10.9'.|
