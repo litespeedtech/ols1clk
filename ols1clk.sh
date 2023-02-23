@@ -64,10 +64,10 @@ ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(71 72 73 74 80 81 82)
-MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9)
+MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11)
 OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
 LSPHPVER=81
-MARIADBVER=10.9
+MARIADBVER=10.11
 MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
@@ -1794,10 +1794,13 @@ function befor_install_display
     echoY "WebAdmin password:        " "$ADMINPASSWORD"
     echoY "WebAdmin email:           " "$EMAIL"
     echoY "LSPHP version:            " "$LSPHPVER"
-    if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ] && [ "${WITH_PERCONA}" = 0 ] && [ "${PURE_PERCONA}" = 0 ]; then 
+    if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ] && [ "${WITH_PERCONA}" = 0 ] && [ "${PURE_PERCONA}" = 0 ] && [ "${PURE_DB}" = 0 ]; then 
         if [ ${INSTALLWORDPRESS} = 1 ]; then
             echoY "MariaDB version:          " "$MARIADBVER"
         fi
+    elif [ "${PURE_DB}" = 1 ]; then
+        echoY "MariaDB version:          " "$MARIADBVER"
+        echoY "MariaDB root Password:    " "$ROOTPASSWORD"    
     elif [ "${PURE_MYSQL}" = 1 ]; then 
         echoY "MySQL version:            " "$MYSQLVER"
         echoY "MySQL root Password:      " "$ROOTPASSWORD"
