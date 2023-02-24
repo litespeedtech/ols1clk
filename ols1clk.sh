@@ -422,6 +422,9 @@ function install_ols_centos
             ln -s ${SERVER_ROOT}/lsphp${LSPHPVER}/bin/php /usr/bin/php
         fi          
     fi
+    if [ ${INSTALLWORDPRESS} = 1 ]; then
+        silent ${YUM} -y $action lsphp$LSPHPVER-imagick lsphp$LSPHPVER-opcache lsphp$LSPHPVER-redis lsphp$LSPHPVER-memcached lsphp$LSPHPVER-intl
+    fi    
 }
 
 function uninstall_ols_centos
@@ -518,6 +521,9 @@ function install_ols_debian
             ln -s ${SERVER_ROOT}/lsphp${LSPHPVER}/bin/php /usr/bin/php
         fi        
     fi
+    if [ ${INSTALLWORDPRESS} = 1 ]; then
+        silent ${APT} -y install $action lsphp$LSPHPVER-imagick lsphp$LSPHPVER-opcache lsphp$LSPHPVER-redis lsphp$LSPHPVER-memcached lsphp$LSPHPVER-intl
+    fi    
 }
 
 
