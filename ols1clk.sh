@@ -296,6 +296,10 @@ function check_os
             OSNAMEVER=CENTOS8
             OSVER=8
             ;;
+        9)
+            OSNAMEVER=CENTOS9
+            OSVER=9
+            ;;            
         esac    
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu
@@ -389,10 +393,11 @@ function install_ols_centos
     if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] || [ "x$LSPHPVER" = "x73" ] || [ "x$LSPHPVER" = "x74" ]; then
         JSON=lsphp$LSPHPVER-json
     fi
+    echoB "${FPACE} - add litespeedtech repo"
+    sudo wget -q -O - https://repo.litespeed.sh | sudo bash >/dev/null 2>&1
     echoB "${FPACE} - add epel repo"
     silent ${YUM} -y $action epel-release
-    echoB "${FPACE} - add litespeedtech repo"
-    rpm -Uvh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$OSVER.noarch.rpm >/dev/null 2>&1
+
     echoB "${FPACE} - $1 OpenLiteSpeed"
     silent ${YUM} -y $action openlitespeed
     if [ ! -e $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp ] ; then
@@ -476,13 +481,15 @@ function install_ols_debian
         action="--reinstall"
     fi
     echoB "${FPACE} - add litespeedtech repo"
-    grep -Fq  "http://rpms.litespeedtech.com/debian/" /etc/apt/sources.list.d/lst_debian_repo.list 2>/dev/null
-    if [ $? != 0 ] ; then
-        echo "deb http://rpms.litespeedtech.com/debian/ $OSVER main"  > /etc/apt/sources.list.d/lst_debian_repo.list
-    fi
+    sudo wget -q -O - https://repo.litespeed.sh | sudo bash >/dev/null 2>&1
+    #echoB "${FPACE} - add litespeedtech repo"
+    #grep -Fq  "http://rpms.litespeedtech.com/debian/" /etc/apt/sources.list.d/lst_debian_repo.list 2>/dev/null
+    #if [ $? != 0 ] ; then
+    #    echo "deb http://rpms.litespeedtech.com/debian/ $OSVER main"  > /etc/apt/sources.list.d/lst_debian_repo.list
+    #fi
 
-    wget -qO /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
-    wget -qO /etc/apt/trusted.gpg.d/lst_repo.gpg http://rpms.litespeedtech.com/debian/lst_repo.gpg
+    #wget -qO /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
+    #wget -qO /etc/apt/trusted.gpg.d/lst_repo.gpg http://rpms.litespeedtech.com/debian/lst_repo.gpg
     echoB "${FPACE} - update list"
     ${APT} -y update
     echoB "${FPACE} - $1 OpenLiteSpeed"
@@ -570,6 +577,26 @@ function action_purgeall
         uninstall_result
         exit 0
     fi
+}
+
+function config_php
+{
+    echoB "${FPACE} - Config php.ini"
+    if [ -f /etc/redhat-release ] ; then
+        PHPINICONF="${SERVER_ROOT}/lsphp${LSPHPVER}/etc/php.ini"
+    else
+        PHPMVER=$(php -v | head -n 1 | cut -d " " -f 2 | cut -f1-2 -d".")
+        PHPINICONF="${SERVER_ROOT}/lsphp${LSPHPVER}/etc/php/${PHPMVER}/litespeed/php.ini"
+    fi
+    if [ -e "${PHPINICONF}" ]; then 
+        sed -i 's|memory_limit = 128M|memory_limit = 256M|g' ${PHPINICONF}
+        sed -i 's|max_execution_time = 30|max_execution_time = 120|g' ${PHPINICONF}
+        sed -i 's|max_input_time = 60|max_input_time = 240|g' ${PHPINICONF}
+        sed -i 's|post_max_size = 8M|post_max_size = 256M|g' ${PHPINICONF}
+        sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 256M|g' ${PHPINICONF}
+    else
+        echoY "${PHPINICONF} does not exsit, skip!"
+    fi    
 }
 
 function disable_needrestart
@@ -753,7 +780,7 @@ function centos_install_mariadb
         else
             CENTOSVER=centos$OSVER-amd64
         fi
-        if [ "$OSNAMEVER" = "CENTOS8" ] ; then
+        if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
             rpm --quiet --import https://downloads.mariadb.com/MariaDB/MariaDB-Server-GPG-KEY
             cat >> $REPOFILE <<END
 [mariadb]
@@ -776,7 +803,7 @@ END
         fi 
     fi
     echoB "${FPACE} - Install MariaDB"
-    if [ "$OSNAMEVER" = "CENTOS8" ] ; then
+    if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
         silent ${YUM} install -y boost-program-options
         silent ${YUM} --disablerepo=AppStream install -y MariaDB-server MariaDB-client
     else
@@ -788,7 +815,7 @@ END
         exit 1
     fi
     echoB "${FPACE} - Start MariaDB"
-    if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS7" ] ; then
+    if [ "$OSNAMEVER" = "CENTOS9" ] || [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS7" ] ; then
         silent systemctl enable mariadb
         silent systemctl start  mariadb
     else
@@ -799,7 +826,9 @@ END
 function centos_install_mysql
 {
     echoB "${FPACE} - Add MySQL repo"
-    if [ "${OSVER}" = '8' ]; then 
+    if [ "${OSVER}" = '9' ]; then 
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm    
+    elif [ "${OSVER}" = '8' ]; then 
         silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el8-4.noarch.rpm
     elif [ "${OSVER}" = '7' ]; then 
         silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el7-6.noarch.rpm
@@ -928,6 +957,32 @@ function debian_install_percona
     echoB "${FPACE} - Start Percona"
     service mysql start
 }    
+
+function centos_install_postfix
+{
+    if [ -z /usr/sbin/sendmail ]; then
+        echoG 'Install Postfix'
+        yum install postfix -y  > /dev/null 2>&1
+    else
+        echoG 'sendmail is already exist, skip!'
+    fi    
+}
+
+function debian_install_postfix
+{
+    echoG 'Install Postfix'
+    DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' \
+    -o Dpkg::Options::='--force-confold' install postfix > /dev/null 2>&1
+}
+
+function install_postfix
+{
+    if [ "$OSNAME" = 'centos' ] ; then
+        centos_install_postfix
+    else
+        debian_install_postfix
+    fi
+}
 
 function install_mariadb
 {
@@ -1946,6 +2001,7 @@ function main_install_wordpress
                     echo "WordPress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> ${PWD_FILE} 
                 fi
                 change_owner ${WORDPRESSPATH}
+                install_postfix
             fi
         fi 
     fi    
@@ -2096,6 +2152,7 @@ function main
     main_pure_db
     main_install_wordpress
     config_server
+    config_php
     set_proxy_vh
     restart_lsws
     after_install_display

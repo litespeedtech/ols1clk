@@ -23,7 +23,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      |`--adminport [PORTNUMBER]`|          To set the WebAdmin console port number instead of 7080.|
 | `-E` |`--email [EMAIL]`|                 To set the administrator email.|
 |      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 82. We currently support versions '71 72 73 74 80 81 82'.|
-|      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.9. We currently support versions '10.2 10.3 ...10.1'.|
+|      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.9. We currently support versions '10.2 10.3 ...10.11'.|
 | `-W` |`--wordpress`|                     To install WordPress. You will still need to complete the WordPress setup by browser|
 |      |  `--wordpressplus [SITEDOMAIN]`|  To install, set up, and configure WordPress, also LSCache will be enabled|
 |      |  `--wordpresspath [WP_PATH]`|     To specify a location for the new WordPress installation or use for an existing WordPress.|
