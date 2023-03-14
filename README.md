@@ -6,16 +6,27 @@
 
 ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-W** parameter that will install WordPress at the same time but it must still be configured through the wp-config.php page. By default, a MariaDB database will be set up using this script, you can also specify other DB if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** parameter. To completely install WordPress with your OpenLiteSpeed installation, skipping the need for the wp-config.php page, use the **--wordpressplus** flag. This can be used with **--wpuser**, **--wppassword**, **--wplang**, and **--sitetitle** to configure each of the settings normally set by wp-config.php.
 
-## Running ols1clk
+## Installation
 
-ols1clk can be run in the following way:
+Our One-Click script comes with several options. Here are two commmon usages.
+
+Install OpenLiteSpeed, LSPHP, MariaDB, WordPress, and LiteSpeed Cache plugin:
 ```
-./ols1clk.sh [options] [options] …
+bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh ) -w
 ```
 
-When run with no options, ols1clk will install OpenLiteSpeed with the default settings and values.
+Install OpenLiteSpeed and LSPHP only:
+```
+bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh )
+```
+
+See below for additional options and usage examples.
 
 ### Options:
+```
+./ols1clk.sh [option] [option] …
+```
+
 |  Opt |    Options    | Description|
 | :---: | ---------  | ---  |
 |      |`--adminuser [USERNAME]`|          To set the WebAdmin username for OpenLiteSpeed instead of admin.|
@@ -63,27 +74,25 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
 |      `./ols1clk.sh --wordpressplus a.com` |To install OpenLiteSpeed with a fully configured WordPress installation at "a.com".|
 
 ## FAQ
-### How do I create additional Virtual Hosts from console?
+
+### How do I create additional Virtual Hosts from the console?
 Run the following command to create an additional virtual host in a few seconds. The example document root will be **/var/www/www.example.com**. Be sure to substitute your own domain. 
 ```
 /bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com
 ```
 
-### How do I create additional Virtual Hosts with WordPress from console?
-The first time you create an additional Virtual Host, you will need to get your database root password from **/usr/local/lsws/password**, then echo the password to the specified location. Be sure to substitute your own password for `DB_ROOT_PASSWORD`. 
+### How do I create additional Virtual Hosts with WordPress from the console?
+The first time you create an additional Virtual Host, the script will need to get your database root password from **/usr/local/lsws/password**. If you have custom value, please update **/usr/local/lsws/password** or echo the password to the specified location: **/root/.db_password**. 
 ```
 echo 'root_mysql_pass="DB_ROOT_PASSWORD"' > /root/.db_password
 ```
-If your system has no `unzip` package preinstalled, then install it. `apt-get install unzip -y` for Debian, and `yum -y install unzip` for CentOS system. 
 
-Then run the following command to create an additional virtual host with Wordpress.
+Then run the following command to create an additional virtual host with the WordPress.
 ```
 /bin/bash <( curl -sk https://raw.githubusercontent.com/litespeedtech/ls-cloud-image/master/Setup/vhsetup.sh ) -d www.example.com -w
 ```
 
-### How to I create additional Virtual Hosts and LE certificate from console?
-The first time you do this, you will need to install [certbot](https://certbot.eff.org/) on your system. Use `apt-get -y install certbot` for Ubuntu. 
-
+### How to I create additional Virtual Hosts and LE certificates from the console?
 Please be sure that your domain is already pointing to the server.
 
 Then run the following command to create an additional virtual host with a Let's Encrypt certificate applied. Be sure to substitute your own domain and your email address. 

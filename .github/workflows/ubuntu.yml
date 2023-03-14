@@ -27,8 +27,6 @@ jobs:
           sudo echo "127.0.0.1 ${{ env.WP_DOMAIN }}" >> /etc/hosts
       - name: ols1clk installation 
         run: sudo bash -x ols1clk.sh -W --quiet
-      - name: debug lst_debian_repo.list
-        run: sudo cat /etc/apt/sources.list.d/lst_debian_repo.list  
       - name: Verify    
         run: curl -skL http://localhost/ | grep -i "WordPress" >/dev/null 2>&1
       - name: ols1clk uninstallation    

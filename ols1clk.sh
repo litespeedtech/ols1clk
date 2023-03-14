@@ -393,10 +393,16 @@ function install_ols_centos
     if [ "x$LSPHPVER" = "x70" ] || [ "x$LSPHPVER" = "x71" ] || [ "x$LSPHPVER" = "x72" ] || [ "x$LSPHPVER" = "x73" ] || [ "x$LSPHPVER" = "x74" ]; then
         JSON=lsphp$LSPHPVER-json
     fi
+
+    if [ "${OSNAMEVER}" = 'CENTOS9' ]; then
+        echoB "${FPACE} - add remi repo"
+        silent ${YUM} -y $action install https://rpms.remirepo.net/enterprise/remi-release-${OSVER}.rpm
+    else
+        echoB "${FPACE} - add epel repo"
+        silent ${YUM} -y $action epel-release
+    fi
     echoB "${FPACE} - add litespeedtech repo"
     sudo wget -q -O - https://repo.litespeed.sh | sudo bash >/dev/null 2>&1
-    echoB "${FPACE} - add epel repo"
-    silent ${YUM} -y $action epel-release
 
     echoB "${FPACE} - $1 OpenLiteSpeed"
     silent ${YUM} -y $action openlitespeed
@@ -482,14 +488,6 @@ function install_ols_debian
     fi
     echoB "${FPACE} - add litespeedtech repo"
     sudo wget -q -O - https://repo.litespeed.sh | sudo bash >/dev/null 2>&1
-    #echoB "${FPACE} - add litespeedtech repo"
-    #grep -Fq  "http://rpms.litespeedtech.com/debian/" /etc/apt/sources.list.d/lst_debian_repo.list 2>/dev/null
-    #if [ $? != 0 ] ; then
-    #    echo "deb http://rpms.litespeedtech.com/debian/ $OSVER main"  > /etc/apt/sources.list.d/lst_debian_repo.list
-    #fi
-
-    #wget -qO /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg
-    #wget -qO /etc/apt/trusted.gpg.d/lst_repo.gpg http://rpms.litespeedtech.com/debian/lst_repo.gpg
     echoB "${FPACE} - update list"
     ${APT} -y update
     echoB "${FPACE} - $1 OpenLiteSpeed"
