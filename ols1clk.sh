@@ -279,7 +279,7 @@ function display_license
 
 function check_os
 {
-    if [ -f /etc/redhat-release ] ; then
+    if [ -f /etc/centos-release ] ; then
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
@@ -300,7 +300,29 @@ function check_os
             OSNAMEVER=CENTOS9
             OSVER=9
             ;;            
-        esac    
+        esac
+    elif [ -f /etc/redhat-release ] ; then
+        OSNAME=centos
+        USER='nobody'
+        GROUP='nobody'
+        case $(cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1) in 
+        6)
+            OSNAMEVER=CENTOS6
+            OSVER=6
+            ;;
+        7)
+            OSNAMEVER=CENTOS7
+            OSVER=7
+            ;;
+        8)
+            OSNAMEVER=CENTOS8
+            OSVER=8
+            ;;
+        9)
+            OSNAMEVER=CENTOS9
+            OSVER=9
+            ;;            
+        esac             
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu
         USER='nobody'
@@ -396,7 +418,7 @@ function install_ols_centos
 
     if [ "${OSNAMEVER}" = 'CENTOS9' ]; then
         echoB "${FPACE} - add remi repo"
-        silent ${YUM} -y $action install https://rpms.remirepo.net/enterprise/remi-release-${OSVER}.rpm
+        silent ${YUM} -y $action https://rpms.remirepo.net/enterprise/remi-release-${OSVER}.rpm
     else
         echoB "${FPACE} - add epel repo"
         silent ${YUM} -y $action epel-release
