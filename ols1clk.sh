@@ -64,7 +64,7 @@ ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(71 72 73 74 80 81 82)
-MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11)
+MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 11.0 11.1 11.2)
 OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
 LSPHPVER=81
 MARIADBVER=10.11
@@ -284,10 +284,6 @@ function check_os
         USER='nobody'
         GROUP='nobody'
         case $(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1) in 
-        6)
-            OSNAMEVER=CENTOS6
-            OSVER=6
-            ;;
         7)
             OSNAMEVER=CENTOS7
             OSVER=7
@@ -306,10 +302,6 @@ function check_os
         USER='nobody'
         GROUP='nobody'
         case $(cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1) in 
-        6)
-            OSNAMEVER=CENTOS6
-            OSVER=6
-            ;;
         7)
             OSNAMEVER=CENTOS7
             OSVER=7
@@ -328,16 +320,6 @@ function check_os
         USER='nobody'
         GROUP='nogroup'
         case $(cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2) in
-        trusty)
-            OSNAMEVER=UBUNTU14
-            OSVER=trusty
-            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
-            ;;        
-        xenial)
-            OSNAMEVER=UBUNTU16
-            OSVER=xenial
-            MARIADBCPUARCH="arch=amd64,i386,ppc64el"
-            ;;
         bionic)
             OSNAMEVER=UBUNTU18
             OSVER=bionic
@@ -357,11 +339,6 @@ function check_os
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
         case $(cat /etc/os-release | grep VERSION_CODENAME | cut -d = -f 2) in
-        jessie)
-            OSNAMEVER=DEBIAN8
-            OSVER=jessie
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
         stretch) 
             OSNAMEVER=DEBIAN9
             OSVER=stretch
@@ -381,7 +358,7 @@ function check_os
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(6-8), Debian(8-11) and Ubuntu(14,16,18,20,22)."
+        echoR "Sorry, currently one click installation only supports Centos(7-9), Debian(10-11) and Ubuntu(18,20,22)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
@@ -792,36 +769,37 @@ function test_mysql_password
 function centos_install_mariadb
 {
     echoB "${FPACE} - Add MariaDB repo"
-    local REPOFILE=/etc/yum.repos.d/MariaDB.repo
-    if [ ! -f $REPOFILE ] ; then
-        local CENTOSVER=
-        if [ "$OSTYPE" != "x86_64" ] ; then
-            CENTOSVER=centos$OSVER-x86
-        else
-            CENTOSVER=centos$OSVER-amd64
-        fi
-        if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
-            rpm --quiet --import https://downloads.mariadb.com/MariaDB/MariaDB-Server-GPG-KEY
-            cat >> $REPOFILE <<END
-[mariadb]
-name = MariaDB
-baseurl = https://downloads.mariadb.com/MariaDB/mariadb-$MARIADBVER/yum/rhel/\$releasever/\$basearch
-gpgkey = file:///etc/pki/rpm-gpg/MariaDB-Server-GPG-KEY
-gpgcheck=1
-enabled = 1
-module_hotfixes = 1
-END
-        else
-            cat >> $REPOFILE <<END
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/$MARIADBVER/$CENTOSVER
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1
+    curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
+#    local REPOFILE=/etc/yum.repos.d/MariaDB.repo
+#    if [ ! -f $REPOFILE ] ; then
+#        local CENTOSVER=
+#        if [ "$OSTYPE" != "x86_64" ] ; then
+#            CENTOSVER=centos$OSVER-x86
+#        else
+#            CENTOSVER=centos$OSVER-amd64
+#        fi
+#        if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
+#            rpm --quiet --import https://downloads.mariadb.com/MariaDB/MariaDB-Server-GPG-KEY
+#            cat >> $REPOFILE <<END
+#[mariadb]
+#name = MariaDB
+#baseurl = https://downloads.mariadb.com/MariaDB/mariadb-$MARIADBVER/yum/rhel/\$releasever/\$basearch
+#gpgkey = file:///etc/pki/rpm-gpg/MariaDB-Server-GPG-KEY
+#gpgcheck=1
+#enabled = 1
+#module_hotfixes = 1
+#END
+#        else
+#            cat >> $REPOFILE <<END
+#[mariadb]
+#name = MariaDB
+#baseurl = http://yum.mariadb.org/$MARIADBVER/$CENTOSVER
+#gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+#gpgcheck=1
 
-END
-        fi 
-    fi
+#END
+#        fi 
+#    fi
     echoB "${FPACE} - Install MariaDB"
     if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
         silent ${YUM} install -y boost-program-options
@@ -887,21 +865,24 @@ function debian_install_mariadb
     elif [ "$OSNAME" = "ubuntu" ]; then
         silent ${APT} -y -f install software-properties-common
     fi
-    MARIADB_KEY='/usr/share/keyrings/mariadb.gpg'
-    wget -q -O- https://mariadb.org/mariadb_release_signing_key.asc | gpg --dearmor > "${MARIADB_KEY}"
-    if [ ! -e "${MARIADB_KEY}" ]; then 
-        echoR "${MARIADB_KEY} does not exist, please check the key, exit!"
-        exit 1
-    fi
+    #MARIADB_KEY='/usr/share/keyrings/mariadb.gpg'
+    #wget -q -O- https://mariadb.org/mariadb_release_signing_key.asc | gpg --dearmor > "${MARIADB_KEY}"
+    #if [ ! -e "${MARIADB_KEY}" ]; then 
+    #    echoR "${MARIADB_KEY} does not exist, please check the key, exit!"
+    #    exit 1
+    #fi
     echoB "${FPACE} - Add MariaDB repo"
-    if [ -e /etc/apt/sources.list.d/mariadb.list ]; then  
-        grep -Fq  "mirror.mariadb.org" /etc/apt/sources.list.d/mariadb.list >/dev/null 2>&1
-        if [ $? != 0 ] ; then
-            echo "deb [$MARIADBCPUARCH signed-by=${MARIADB_KEY}] http://mirror.mariadb.org/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb.list
-        fi
-    else 
-        echo "deb [$MARIADBCPUARCH signed-by=${MARIADB_KEY}] http://mirror.mariadb.org/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb.list
-    fi
+	
+    curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
+
+    #if [ -e /etc/apt/sources.list.d/mariadb.list ]; then  
+    #    grep -Fq  "mirror.mariadb.org" /etc/apt/sources.list.d/mariadb.list >/dev/null 2>&1
+    #    if [ $? != 0 ] ; then
+    #        echo "deb [$MARIADBCPUARCH signed-by=${MARIADB_KEY}] http://mirror.mariadb.org/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb.list
+    #    fi
+    #else 
+    #    echo "deb [$MARIADBCPUARCH signed-by=${MARIADB_KEY}] http://mirror.mariadb.org/repo/$MARIADBVER/$OSNAME $OSVER main"  > /etc/apt/sources.list.d/mariadb.list
+    #fi
     echoB "${FPACE} - Update packages"
     ${APT} update
     echoB "${FPACE} - Install MariaDB"
@@ -2108,8 +2089,8 @@ function test_wordpress_plus
     else
         echoG 'Proxy is on, skip the test!'
     fi        
-    test_page http://$SITEDOMAIN:$WPPORT/ WordPress "test wordpress HTTP first page"
-    test_page https://$SITEDOMAIN:$SSLWPPORT/ WordPress "test wordpress HTTPS first page"
+    test_page "http://$SITEDOMAIN:$WPPORT/ --resolve $SITEDOMAIN:$WPPORT:127.0.0.1" WordPress "test wordpress HTTP first page"
+    test_page "https://$SITEDOMAIN:$SSLWPPORT/ --resolve $SITEDOMAIN:$SSLWPPORT:127.0.0.1" WordPress "test wordpress HTTPS first page"
 }
 
 
