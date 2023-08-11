@@ -338,6 +338,8 @@ function check_os
         esac
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
+        USER='nobody'
+        GROUP='nogroup'        
         case $(cat /etc/os-release | grep VERSION_CODENAME | cut -d = -f 2) in
         stretch) 
             OSNAMEVER=DEBIAN9
