@@ -29,6 +29,8 @@ MARIADBCPUARCH=
 SERVER_ROOT=/usr/local/lsws
 WEBCF="$SERVER_ROOT/conf/httpd_config.conf"
 EXAMPLE_VHOSTCONF="$SERVER_ROOT/conf/vhosts/Example/vhconf.conf"
+RULE_FILE='modsec_includes.conf'
+OWASP_DIR="${SERVER_ROOT}/conf/owasp"
 OLSINSTALLED=
 MYSQLINSTALLED=
 TESTGETERROR=no
@@ -71,6 +73,8 @@ MARIADBVER=10.11
 MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
+OWASP_V='3.3.4'
+SET_OWASP=
 ALLERRORS=0
 TEMPPASSWORD=
 ACTION=INSTALL
@@ -249,6 +253,8 @@ function usage
     echoW " --pure-percona                    " "To install OpenLiteSpeed and Percona"
     echoW " --with-mysql                      " "To install OpenLiteSpeed/App with MySQL"
     echoW " --with-percona                    " "To install OpenLiteSpeed/App with Percona"
+    echoW " --owasp-enable                    " "To enable mod_security with OWASP rules. If OLS is installed, then enable the owasp directly"
+    echoW " --owasp-disable                   " "To disable mod_security with OWASP rules."
     echoW " --proxy-r                         " "To set a proxy with rewrite type."
     echoW " --proxy-c                         " "To set a proxy with config type."
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
@@ -372,6 +378,20 @@ function check_os
             echoG "Current platform is "  "$OSNAMEVER $OSNAME $OSVER."
         fi
     fi
+}
+
+function fst_match_line
+{
+    FIRST_LINE_NUM=$(grep -n -m 1 "${1}" ${2} | awk -F ':' '{print $1}')
+}
+function fst_match_after
+{
+    FIRST_NUM_AFTER=$(tail -n +${1} ${2} | grep -n -m 1 ${3} | awk -F ':' '{print $1}')
+}
+function lst_match_line
+{
+    fst_match_after ${1} ${2} ${3}
+    LAST_LINE_NUM=$((${FIRST_LINE_NUM}+${FIRST_NUM_AFTER}-1))
 }
 
 function update_centos_hashlib
@@ -857,6 +877,15 @@ function centos_install_percona
     service mysqld start 2>/dev/null
 }    
 
+function centos_install_unzip
+{
+    if [ ! -f /usr/bin/unzip ]; then
+        echoB "${FPACE} - Install Unzip"
+        yum update >/dev/null 2>&1
+        yum install unzip -y >/dev/null 2>&1
+    fi
+}
+
 function debian_install_mariadb
 {
     echoB "${FPACE} - Install software properties"
@@ -960,6 +989,141 @@ function debian_install_percona
     echoB "${FPACE} - Start Percona"
     service mysql start
 }    
+
+function debian_install_unzip
+{
+    if [ ! -f /usr/bin/unzip ]; then
+        echoB "${FPACE} - Install Unzip"
+        apt update >/dev/null 2>&1
+        apt-get install unzip -y >/dev/null 2>&1
+    fi
+}
+
+function mk_owasp_dir
+{
+    echoB "${FPACE} - Create owasp dir"
+    if [ -d ${OWASP_DIR} ] ; then
+        rm -rf ${OWASP_DIR}
+    fi
+    mkdir -p ${OWASP_DIR}
+    if [ ${?} -ne 0 ] ; then
+        echo "Unable to create directory: ${OWASP_DIR}, exit!"
+        exit 1
+    fi
+}
+
+function enable_ols_modsec
+{
+    grep 'module mod_security {' ${WEBCF} >/dev/null 2>&1
+    if [ ${?} -eq 0 ] ; then
+        echoB "${FPACE} - Already configured for modsecurity."
+    else
+        echoB "${FPACE} - Enable modsecurity"
+        sed -i "s=module cache=module mod_security {\nmodsecurity  on\
+        \nmodsecurity_rules \`\nSecRuleEngine On\n\`\nmodsecurity_rules_file \
+        ${OWASP_DIR}/${RULE_FILE}\n  ls_enabled              1\n}\
+        \n\nmodule cache=" ${WEBCF}
+    fi    
+}
+
+function disable_ols_modesec
+{
+    grep 'module mod_security {' ${WEBCF} >/dev/null 2>&1
+    if [ ${?} -eq 0 ] ; then
+        echo 'Disable modsecurity'
+        fst_match_line 'module mod_security' ${WEBCF}
+        lst_match_line ${FIRST_LINE_NUM} ${WEBCF} '}'
+        sed -i "${FIRST_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
+    else
+        echo 'Already disabled for modsecurity'
+    fi    
+}
+
+function install_owasp
+{
+    cd ${OWASP_DIR}
+    echoB "${FPACE} - Download OWASP rules"
+    wget -q https://github.com/coreruleset/coreruleset/archive/refs/tags/v${OWASP_V}.zip
+    unzip -qq v${OWASP_V}.zip
+    rm -f v${OWASP_V}.zip
+    mv coreruleset-* owasp-modsecurity-crs
+}
+
+function centos_install_modsecurity
+{
+    ${YUM} -y install ols-modsecurity >/dev/null 2>&1
+}
+
+function debian_install_modsecurity
+{
+    ${APT} -y install ols-modsecurity >/dev/null 2>&1
+}
+
+
+function install_modsecurity
+{
+    if [ ! -f ${SERVER_ROOT}/modules/mod_security.so ]; then
+        echoB "${FPACE} - Install Mod_security Package"
+        if [ "$OSNAME" = "centos" ] ; then
+            centos_install_modsecurity
+        else
+            debian_install_modsecurity
+        fi
+    fi
+}
+
+function configure_owasp
+{
+    echoB "${FPACE} - Config OWASP rules"
+    cd ${OWASP_DIR}
+    echo "include modsecurity.conf
+include owasp-modsecurity-crs/crs-setup.conf
+include owasp-modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+include owasp-modsecurity-crs/rules/REQUEST-901-INITIALIZATION.conf
+include owasp-modsecurity-crs/rules/REQUEST-903.9001-DRUPAL-EXCLUSION-RULES.conf
+include owasp-modsecurity-crs/rules/REQUEST-903.9002-WORDPRESS-EXCLUSION-RULES.conf
+include owasp-modsecurity-crs/rules/REQUEST-903.9003-NEXTCLOUD-EXCLUSION-RULES.conf
+include owasp-modsecurity-crs/rules/REQUEST-903.9004-DOKUWIKI-EXCLUSION-RULES.conf
+include owasp-modsecurity-crs/rules/REQUEST-903.9005-CPANEL-EXCLUSION-RULES.conf
+include owasp-modsecurity-crs/rules/REQUEST-903.9006-XENFORO-EXCLUSION-RULES.conf
+include owasp-modsecurity-crs/rules/REQUEST-905-COMMON-EXCEPTIONS.conf
+include owasp-modsecurity-crs/rules/REQUEST-910-IP-REPUTATION.conf
+include owasp-modsecurity-crs/rules/REQUEST-911-METHOD-ENFORCEMENT.conf
+include owasp-modsecurity-crs/rules/REQUEST-912-DOS-PROTECTION.conf
+include owasp-modsecurity-crs/rules/REQUEST-913-SCANNER-DETECTION.conf
+include owasp-modsecurity-crs/rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf
+include owasp-modsecurity-crs/rules/REQUEST-921-PROTOCOL-ATTACK.conf
+include owasp-modsecurity-crs/rules/REQUEST-930-APPLICATION-ATTACK-LFI.conf
+include owasp-modsecurity-crs/rules/REQUEST-931-APPLICATION-ATTACK-RFI.conf
+include owasp-modsecurity-crs/rules/REQUEST-932-APPLICATION-ATTACK-RCE.conf
+include owasp-modsecurity-crs/rules/REQUEST-933-APPLICATION-ATTACK-PHP.conf
+include owasp-modsecurity-crs/rules/REQUEST-934-APPLICATION-ATTACK-NODEJS.conf
+include owasp-modsecurity-crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf
+include owasp-modsecurity-crs/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf
+include owasp-modsecurity-crs/rules/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf
+include owasp-modsecurity-crs/rules/REQUEST-944-APPLICATION-ATTACK-JAVA.conf
+include owasp-modsecurity-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf
+include owasp-modsecurity-crs/rules/RESPONSE-950-DATA-LEAKAGES.conf
+include owasp-modsecurity-crs/rules/RESPONSE-951-DATA-LEAKAGES-SQL.conf
+include owasp-modsecurity-crs/rules/RESPONSE-952-DATA-LEAKAGES-JAVA.conf
+include owasp-modsecurity-crs/rules/RESPONSE-953-DATA-LEAKAGES-PHP.conf
+include owasp-modsecurity-crs/rules/RESPONSE-954-DATA-LEAKAGES-IIS.conf
+include owasp-modsecurity-crs/rules/RESPONSE-959-BLOCKING-EVALUATION.conf
+include owasp-modsecurity-crs/rules/RESPONSE-980-CORRELATION.conf
+include owasp-modsecurity-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf">modsec_includes.conf
+    echo "SecRuleEngine On">modsecurity.conf
+    cd ${OWASP_DIR}/owasp-modsecurity-crs
+    if [ -f crs-setup.conf.example ]; then
+        mv crs-setup.conf.example crs-setup.conf
+    fi    
+    cd ${OWASP_DIR}/owasp-modsecurity-crs/rules
+    if [ -f REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example ]; then
+        mv REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+    fi
+    if [ -f RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example ]; then
+        mv RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
+    fi
+}
 
 function centos_install_postfix
 {
@@ -1440,6 +1604,14 @@ function install_openlitespeed
     echoG "End setup OpenLiteSpeed"
 }
 
+function install_unzip
+{
+    if [ "$OSNAME" = "centos" ] ; then
+        centos_install_unzip
+    else
+        debian_install_unzip
+    fi
+}
 
 function gen_selfsigned_cert
 {
@@ -1923,6 +2095,20 @@ function befor_install_display
     echoCYAN 'Start OpenLiteSpeed one click installation >> >> >> >> >> >> >>'
 }
 
+function main_owasp
+{
+    if [ "${SET_OWASP}" = 'ON' ]; then
+        echoG "Start Enable OWASP"
+        mk_owasp_dir
+        install_unzip
+        install_owasp
+        install_modsecurity
+        configure_owasp
+        enable_ols_modsec 
+        echoG "End Enable OWASP"
+    fi
+}
+
 function install_wp_cli
 {
     if [ -e /usr/local/bin/wp ] || [ -e /usr/bin/wp ]; then 
@@ -2156,6 +2342,7 @@ function main
     main_install_wordpress
     config_server
     config_php
+    main_owasp
     set_proxy_vh
     restart_lsws
     after_install_display
@@ -2297,7 +2484,20 @@ while [ ! -z "${1}" ] ; do
         --proxy-c )
                 PROXY=1
                 PROXY_TYPE='c'
-                ;;                                            
+                ;;           
+        --owasp-enable )
+                if [ -e ${WEBCF} ]; then
+                    SET_OWASP='ON'
+                    main_owasp
+                    exit 0
+                else
+                    SET_OWASP='ON'
+                fi    
+                ;;      
+        --owasp-disable )
+                disable_ols_modesec
+                exit 0
+                ;;                                                               
         -[Pp] | --purgeall )        
                 ACTION=PURGEALL
                 ;;

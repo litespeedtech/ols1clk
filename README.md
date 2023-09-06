@@ -54,6 +54,8 @@ See below for additional options and usage examples.
 |      |   `--pure-percona`|               To install OpenLiteSpeed and Percona.|
 |      |   `--with-mysql`  |               To install OpenLiteSpeed/App with MySQL.|
 |      |   `--with-percona`  |             To install OpenLiteSpeed/App with Percona.|
+|      |   `--owasp-enable`  |             To enable mod_security with OWASP rules. If OLS is installed, then enable the owasp directly|
+|      |   `--owasp-disable`  |            To disable mod_security with OWASP rules.|    
 |      |   `--proxy-r`  |                  To set a proxy with rewrite type.|
 |      |   `--proxy-c`  |                  To set a proxy with config type.|
 | `-U` |   `--uninstall`  |                To uninstall OpenLiteSpeed and remove installation directory.|
