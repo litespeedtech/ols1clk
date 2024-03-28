@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2023 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2024 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -73,7 +73,7 @@ MARIADBVER=10.11
 MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
-OWASP_V='3.3.5'
+OWASP_V='4.1.0'
 SET_OWASP=
 ALLERRORS=0
 TEMPPASSWORD=
