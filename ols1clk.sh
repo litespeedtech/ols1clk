@@ -1096,16 +1096,16 @@ function configure_owasp
     if [ -f ${CRS_DIR}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example ]; then
         mv ${CRS_DIR}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example ${CRS_DIR}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
     fi
-    if [ -f modsec_includes.conf ]; then
-        mv modsec_includes.conf modsec_includes.conf.bk
+    if [ -f "${RULE_FILE}" ]; then
+        mv ${RULE_FILE} ${RULE_FILE}.bk
     fi
-    echo 'include modsecurity.conf' >> modsec_includes.conf
+    echo 'include modsecurity.conf' >> ${RULE_FILE}
     if [ -f ${CRS_DIR}/crs-setup.conf.example ]; then
         mv ${CRS_DIR}/crs-setup.conf.example ${CRS_DIR}/crs-setup.conf
-        echo "include ${CRS_DIR}/crs-setup.conf" >> modsec_includes.conf
+        echo "include ${CRS_DIR}/crs-setup.conf" >> ${RULE_FILE}
     fi    
     ALL_RULES="$(ls ${CRS_DIR}/rules/ | grep 'REQUEST-\|RESPONSE-')"
-    echo "${ALL_RULES}"  | while read LINE; do echo "include ${CRS_DIR}/rules/${LINE}" >> modsec_includes.conf; done
+    echo "${ALL_RULES}"  | while read LINE; do echo "include ${CRS_DIR}/rules/${LINE}" >> ${RULE_FILE}; done
     echo 'SecRuleEngine On' > modsecurity.conf
     chown -R lsadm ${OWASP_DIR}
 }
