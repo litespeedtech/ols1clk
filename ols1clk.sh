@@ -31,6 +31,7 @@ WEBCF="$SERVER_ROOT/conf/httpd_config.conf"
 EXAMPLE_VHOSTCONF="$SERVER_ROOT/conf/vhosts/Example/vhconf.conf"
 RULE_FILE='modsec_includes.conf'
 OWASP_DIR="${SERVER_ROOT}/conf/owasp"
+CRS_DIR='owasp-modsecurity-crs'
 OLSINSTALLED=
 MYSQLINSTALLED=
 TESTGETERROR=no
@@ -73,7 +74,7 @@ MARIADBVER=10.11
 MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
-OWASP_V='4.1.0'
+OWASP_V='4.2.0'
 SET_OWASP=
 ALLERRORS=0
 TEMPPASSWORD=
@@ -1036,8 +1037,20 @@ function disable_ols_modesec
         sed -i "${FIRST_LINE_NUM},${LAST_LINE_NUM}d" ${WEBCF}
     else
         echo 'Already disabled for modsecurity'
-    fi    
+    fi
+    restart_lsws  
 }
+
+function backup_owasp
+{
+    if [ -d ${OWASP_DIR} ]; then
+        echoY "Detect ${OWASP_DIR} folder exist, move to ${OWASP_DIR}.$(date +%F).bk"
+        if [ -d ${OWASP_DIR}.$(date +%F).bk ]; then
+            rm -rf ${OWASP_DIR}.$(date +%F).bk
+        fi
+        mv ${OWASP_DIR} ${OWASP_DIR}.$(date +%F).bk
+    fi
+}    
 
 function install_owasp
 {
@@ -1046,7 +1059,7 @@ function install_owasp
     wget -q https://github.com/coreruleset/coreruleset/archive/refs/tags/v${OWASP_V}.zip
     unzip -qq v${OWASP_V}.zip
     rm -f v${OWASP_V}.zip
-    mv coreruleset-* owasp-modsecurity-crs
+    mv coreruleset-* ${CRS_DIR}
 }
 
 function centos_install_modsecurity
@@ -1075,54 +1088,26 @@ function install_modsecurity
 function configure_owasp
 {
     echoB "${FPACE} - Config OWASP rules"
+  
     cd ${OWASP_DIR}
-    echo "include modsecurity.conf
-include owasp-modsecurity-crs/crs-setup.conf
-include owasp-modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
-include owasp-modsecurity-crs/rules/REQUEST-901-INITIALIZATION.conf
-include owasp-modsecurity-crs/rules/REQUEST-903.9001-DRUPAL-EXCLUSION-RULES.conf
-include owasp-modsecurity-crs/rules/REQUEST-903.9002-WORDPRESS-EXCLUSION-RULES.conf
-include owasp-modsecurity-crs/rules/REQUEST-903.9003-NEXTCLOUD-EXCLUSION-RULES.conf
-include owasp-modsecurity-crs/rules/REQUEST-903.9004-DOKUWIKI-EXCLUSION-RULES.conf
-include owasp-modsecurity-crs/rules/REQUEST-903.9005-CPANEL-EXCLUSION-RULES.conf
-include owasp-modsecurity-crs/rules/REQUEST-903.9006-XENFORO-EXCLUSION-RULES.conf
-include owasp-modsecurity-crs/rules/REQUEST-905-COMMON-EXCEPTIONS.conf
-include owasp-modsecurity-crs/rules/REQUEST-910-IP-REPUTATION.conf
-include owasp-modsecurity-crs/rules/REQUEST-911-METHOD-ENFORCEMENT.conf
-include owasp-modsecurity-crs/rules/REQUEST-912-DOS-PROTECTION.conf
-include owasp-modsecurity-crs/rules/REQUEST-913-SCANNER-DETECTION.conf
-include owasp-modsecurity-crs/rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf
-include owasp-modsecurity-crs/rules/REQUEST-921-PROTOCOL-ATTACK.conf
-include owasp-modsecurity-crs/rules/REQUEST-930-APPLICATION-ATTACK-LFI.conf
-include owasp-modsecurity-crs/rules/REQUEST-931-APPLICATION-ATTACK-RFI.conf
-include owasp-modsecurity-crs/rules/REQUEST-932-APPLICATION-ATTACK-RCE.conf
-include owasp-modsecurity-crs/rules/REQUEST-933-APPLICATION-ATTACK-PHP.conf
-include owasp-modsecurity-crs/rules/REQUEST-934-APPLICATION-ATTACK-NODEJS.conf
-include owasp-modsecurity-crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf
-include owasp-modsecurity-crs/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf
-include owasp-modsecurity-crs/rules/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf
-include owasp-modsecurity-crs/rules/REQUEST-944-APPLICATION-ATTACK-JAVA.conf
-include owasp-modsecurity-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf
-include owasp-modsecurity-crs/rules/RESPONSE-950-DATA-LEAKAGES.conf
-include owasp-modsecurity-crs/rules/RESPONSE-951-DATA-LEAKAGES-SQL.conf
-include owasp-modsecurity-crs/rules/RESPONSE-952-DATA-LEAKAGES-JAVA.conf
-include owasp-modsecurity-crs/rules/RESPONSE-953-DATA-LEAKAGES-PHP.conf
-include owasp-modsecurity-crs/rules/RESPONSE-954-DATA-LEAKAGES-IIS.conf
-include owasp-modsecurity-crs/rules/RESPONSE-959-BLOCKING-EVALUATION.conf
-include owasp-modsecurity-crs/rules/RESPONSE-980-CORRELATION.conf
-include owasp-modsecurity-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf">modsec_includes.conf
-    echo "SecRuleEngine On">modsecurity.conf
-    cd ${OWASP_DIR}/owasp-modsecurity-crs
-    if [ -f crs-setup.conf.example ]; then
-        mv crs-setup.conf.example crs-setup.conf
+    if [ -f ${CRS_DIR}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example ]; then
+        mv ${CRS_DIR}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example ${CRS_DIR}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+    fi
+    if [ -f ${CRS_DIR}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example ]; then
+        mv ${CRS_DIR}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example ${CRS_DIR}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
+    fi
+    if [ -f modsec_includes.conf ]; then
+        mv modsec_includes.conf modsec_includes.conf.bk
+    fi
+    echo 'include modsecurity.conf' >> modsec_includes.conf
+    if [ -f ${CRS_DIR}/crs-setup.conf.example ]; then
+        mv ${CRS_DIR}/crs-setup.conf.example ${CRS_DIR}/crs-setup.conf
+        echo "include ${CRS_DIR}/crs-setup.conf" >> modsec_includes.conf
     fi    
-    cd ${OWASP_DIR}/owasp-modsecurity-crs/rules
-    if [ -f REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example ]; then
-        mv REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
-    fi
-    if [ -f RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example ]; then
-        mv RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
-    fi
+    ALL_RULES="$(ls ${CRS_DIR}/rules/ | grep 'REQUEST-\|RESPONSE-')"
+    echo "${ALL_RULES}"  | while read LINE; do echo "include ${CRS_DIR}/rules/${LINE}" >> modsec_includes.conf; done
+    echo 'SecRuleEngine On' > modsecurity.conf
+    chown -R lsadm ${OWASP_DIR}
 }
 
 function centos_install_postfix
@@ -2099,12 +2084,14 @@ function main_owasp
 {
     if [ "${SET_OWASP}" = 'ON' ]; then
         echoG "Start Enable OWASP"
+        backup_owasp
         mk_owasp_dir
         install_unzip
         install_owasp
         install_modsecurity
         configure_owasp
-        enable_ols_modsec 
+        enable_ols_modsec
+        restart_lsws
         echoG "End Enable OWASP"
     fi
 }
