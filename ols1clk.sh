@@ -66,10 +66,10 @@ ADMINPASSWORD=
 ROOTPASSWORD=
 USERPASSWORD=
 WPPASSWORD=
-LSPHPVERLIST=(71 72 73 74 80 81 82)
-MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 11.0 11.1 11.2)
+LSPHPVERLIST=(71 72 73 74 80 81 82 83)
+MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 11.0 11.1 11.2 11.3)
 OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
-LSPHPVER=81
+LSPHPVER=82
 MARIADBVER=10.11
 MYSQLVER=8.0
 PERCONAVER=80
@@ -268,7 +268,7 @@ function usage
     echo 
     echo -e "\033[1mEXAMPLES\033[0m"
     echoW "./ols1clk.sh                       " "To install OpenLiteSpeed with a random WebAdmin password."
-    echoW "./ols1clk.sh --lsphp 80            " "To install OpenLiteSpeed with lsphp80."
+    echoW "./ols1clk.sh --lsphp 83            " "To install OpenLiteSpeed with lsphp83."
     echoW "./ols1clk.sh -A 123456 -e a@cc.com " "To install OpenLiteSpeed with WebAdmin password  \"123456\" and email a@cc.com."
     echoW "./ols1clk.sh -R 123456 -W          " "To install OpenLiteSpeed with WordPress and MySQL root password \"123456\"."
     echoW "./ols1clk.sh --wordpressplus a.com " "To install OpenLiteSpeed with a fully configured WordPress installation at \"a.com\"."
@@ -280,7 +280,7 @@ function display_license
 {
     echoY '**********************************************************************************************'
     echoY '*                    Open LiteSpeed One click installation, Version 3.1                      *'
-    echoY '*                    Copyright (C) 2016 - 2023 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Copyright (C) 2016 - 2024 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
