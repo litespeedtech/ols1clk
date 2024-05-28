@@ -341,7 +341,12 @@ function check_os
             OSNAMEVER=UBUNTU22
             OSVER=jammy
             MARIADBCPUARCH="arch=amd64"
-            ;;            
+            ;;          
+        noble)            
+            OSNAMEVER=UBUNTU24
+            OSVER=noble
+            MARIADBCPUARCH="arch=amd64"
+            ;;                
         esac
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
@@ -363,11 +368,16 @@ function check_os
             OSVER=bullseye
             MARIADBCPUARCH="arch=amd64,i386"
             ;;
+        bookworm)
+            OSNAMEVER=DEBIAN12
+            OSVER=bookworm
+            MARIADBCPUARCH="arch=amd64,i386"
+            ;;            
         esac    
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(7-9), Debian(10-11) and Ubuntu(18,20,22)."
+        echoR "Sorry, currently one click installation only supports Centos(7-9), Debian(10-12) and Ubuntu(18,20,22,24)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
