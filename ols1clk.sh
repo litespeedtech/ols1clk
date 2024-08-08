@@ -914,9 +914,13 @@ function debian_install_mariadb
     #    exit 1
     #fi
     echoB "${FPACE} - Add MariaDB repo"
-	
-    curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
-
+	if [ "${OSNAMEVER}" = 'UBUNTU24' ]; then
+        #https://forum.hestiacp.com/t/mariadb-repos-failing/13097
+        echoB "${FPACE} - Skip adding MariaDB repo"
+    else 
+        echoB "${FPACE} - Add MariaDB repo"   
+        curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
+    fi
     #if [ -e /etc/apt/sources.list.d/mariadb.list ]; then  
     #    grep -Fq  "mirror.mariadb.org" /etc/apt/sources.list.d/mariadb.list >/dev/null 2>&1
     #    if [ $? != 0 ] ; then
