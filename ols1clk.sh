@@ -412,6 +412,22 @@ function update_centos_hashlib
     fi
 }
 
+function get_memory
+{
+    RAM_KB=$(grep "MemTotal" /proc/meminfo | awk '{print $2}')
+}
+
+function check_memory
+{
+    if [ "${OSNAMEVER}" = 'CENTOS9' ]; then
+        get_memory
+        if [ "$RAM_KB" -lt "1800000" ]; then
+            echoR 'remi package needs at least 2GB RAM to install it. Exit!'
+            exit 1
+        fi
+    fi
+}
+
 function install_ols_centos
 {
     local action=install
@@ -428,7 +444,6 @@ function install_ols_centos
 
     if [ "${OSNAMEVER}" = 'CENTOS9' ]; then
         echoB "${FPACE} - add remi repo"
-        silent ${YUM} -y $action https://rpms.remirepo.net/enterprise/remi-release-${OSVER}.rpm
     else
         echoB "${FPACE} - add epel repo"
         silent ${YUM} -y $action epel-release
@@ -2316,6 +2331,7 @@ function main_init_check
     check_os
     check_cur_status
     check_dbversion_param
+    check_memory
 }
 
 function main_init_package
