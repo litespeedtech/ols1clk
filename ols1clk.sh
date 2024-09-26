@@ -640,7 +640,7 @@ function config_php
         sed -i 's|post_max_size = 8M|post_max_size = 256M|g' ${PHPINICONF}
         sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 256M|g' ${PHPINICONF}
     else
-        echoY "${PHPINICONF} does not exsit, skip!"
+        echoY "${PHPINICONF} does not exist, skip!"
     fi    
 }
 
@@ -2085,7 +2085,7 @@ function befor_install_display
 
 
         if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
-            echoY "WordPress location:       " "$WORDPRESSPATH (Exsiting)"
+            echoY "WordPress location:       " "$WORDPRESSPATH (Existing)"
             WORDPRESSINSTALLED=1
         else
             echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
