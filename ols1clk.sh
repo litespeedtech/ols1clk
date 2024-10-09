@@ -69,7 +69,7 @@ WPPASSWORD=
 LSPHPVERLIST=(71 72 73 74 80 81 82 83)
 MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 11.0 11.1 11.2 11.3)
 OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
-LSPHPVER=82
+LSPHPVER=83
 MARIADBVER=10.11
 MYSQLVER=8.0
 PERCONAVER=80
@@ -2063,7 +2063,7 @@ function befor_install_display
         echoY "MySQL version:            " "$MYSQLVER"
     fi
 
-    if [ "$INSTALLWORDPRESS" = "1" ] ; then
+    if [ "$INSTALLWORDPRESS" = "1" ] && [ ! -e "$WORDPRESSPATH/wp-config.php" ]; then
         echoY "Install WordPress:        " Yes
         echoY "WordPress HTTP port:      " "$WPPORT"
         echoY "WordPress HTTPS port:     " "$SSLWPPORT"
@@ -2082,15 +2082,12 @@ function befor_install_display
         else
             echoY "WordPress plus:           " No
         fi
-
-
-        if [ -e "$WORDPRESSPATH/wp-config.php" ] ; then
-            echoY "WordPress location:       " "$WORDPRESSPATH (Existing)"
-            WORDPRESSINSTALLED=1
-        else
-            echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
-            WORDPRESSINSTALLED=0
-        fi
+        echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
+        WORDPRESSINSTALLED=0
+        
+    elif [ "$INSTALLWORDPRESS" = "1" ] && [ -e "$WORDPRESSPATH/wp-config.php" ]; then
+        echoY "WordPress location:       " "$WORDPRESSPATH (Existing)"
+        WORDPRESSINSTALLED=1
     else
         echoY "Server HTTP port:         " "$WPPORT"
         echoY "Server HTTPS port:        " "$SSLWPPORT"
@@ -2171,6 +2168,9 @@ function main_install_wordpress
     else
         if [ "$WORDPRESSINSTALLED" = '1' ] ; then
             echoY 'Skip WordPress installation!'
+            config_vh_wp
+            check_port_usage
+            change_owner ${WORDPRESSPATH}            
         else
             if [ "$INSTALLWORDPRESS" = "1" ] ; then
                 install_wp_cli
