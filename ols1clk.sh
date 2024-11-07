@@ -71,7 +71,7 @@ MARIADBVERLIST=(10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 11.0 11.1 11
 OLD_SYS_MARIADBVERLIST=(10.2 10.3 10.4 10.5)
 LSPHPVER=83
 MARIADBVER=10.11
-MYSQLVER=8.0
+#MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
 OWASP_V='4.2.0'
@@ -963,33 +963,33 @@ function debian_install_mariadb
 function debian_install_mysql
 {
     echoB "${FPACE} - Install software properties"
-    local MYSQL_REPO='/etc/apt/sources.list.d/mysql.list'
+    #local MYSQL_REPO='/etc/apt/sources.list.d/mysql.list'
     silent ${APT} -y -f install software-properties-common
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
-    apt-key list 2>&1 | grep MySQL >/dev/null 
-    if [ ${?} != 0 ]; then 
-        echoY 'Key add failed from keyserver.ubuntu.com, try pgp.mit.edu!'
-        apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29
-        apt-key list 2>&1 | grep MySQL >/dev/null 
-        if [ ${?} != 0 ]; then 
-            echoR 'Key add failed from pgp.mit.edu, please check the key issue, exit!'
-            exit 1
-        fi
-    fi
-    echoB "${FPACE} - Add mysql ${MYSQLVER} repo"
-    if [ -e "${MYSQL_REPO}" ]; then
-        grep -Fq  "repo.mysql.com" "${MYSQL_REPO}" >/dev/null 2>&1
-        if [ $? != 0 ] ; then
-            echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"
-        fi
-    else 
-        echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"  
-    fi
-    echoB "${FPACE} - Update packages"
-    ${APT} update
+    #apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
+    #apt-key list 2>&1 | grep MySQL >/dev/null 
+    #if [ ${?} != 0 ]; then 
+    #    echoY 'Key add failed from keyserver.ubuntu.com, try pgp.mit.edu!'
+    #    apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29
+    #    apt-key list 2>&1 | grep MySQL >/dev/null 
+    #    if [ ${?} != 0 ]; then 
+    #        echoR 'Key add failed from pgp.mit.edu, please check the key issue, exit!'
+    #        exit 1
+    #    fi
+    #fi
+    #echoB "${FPACE} - Add mysql ${MYSQLVER} repo"
+    #if [ -e "${MYSQL_REPO}" ]; then
+    #    grep -Fq  "repo.mysql.com" "${MYSQL_REPO}" >/dev/null 2>&1
+    #    if [ $? != 0 ] ; then
+    #        echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"
+    #    fi
+    #else 
+    #    echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"  
+    #fi
+    #echoB "${FPACE} - Update packages"
+    #${APT} update
     echoB "${FPACE} - Install Mysql"
-    debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password ${ROOTPASSWORD}"
-    debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password ${ROOTPASSWORD}"
+    #debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password ${ROOTPASSWORD}"
+    #debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password ${ROOTPASSWORD}"
     DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-server > /dev/null 2>&1
     if [ $? != 0 ] ; then
         echoR "An error occured during installation of MYSQL. Please fix this error and try again."
@@ -2052,7 +2052,7 @@ function befor_install_display
         echoY "MariaDB version:          " "$MARIADBVER"
         echoY "MariaDB root Password:    " "$ROOTPASSWORD"    
     elif [ "${PURE_MYSQL}" = 1 ]; then 
-        echoY "MySQL version:            " "$MYSQLVER"
+        echoY "MySQL:                    " "Yes"
         echoY "MySQL root Password:      " "$ROOTPASSWORD"
     elif [ "${PURE_PERCONA}" = 1 ]; then 
         echoY "PERCONA version:          " "$PERCONAVER"
@@ -2060,7 +2060,7 @@ function befor_install_display
     elif [ "${WITH_PERCONA}" = 1 ]; then 
         echoY "PERCONA version:          " "$PERCONAVER"     
     elif [ "${WITH_MYSQL}" = 1 ]; then   
-        echoY "MySQL version:            " "$MYSQLVER"
+        echoY "MySQL:                    " "Yes"
     fi
 
     if [ "$INSTALLWORDPRESS" = "1" ] && [ ! -e "$WORDPRESSPATH/wp-config.php" ]; then
