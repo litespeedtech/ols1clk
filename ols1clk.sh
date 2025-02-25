@@ -1878,9 +1878,9 @@ END
 function check_cur_status
 {
     if [ -e $SERVER_ROOT/bin/litespeed ] ; then
-        LSWSINSTALLED=1
+        OLSINSTALLED=1
     else
-        LSWSINSTALLED=0
+        OLSINSTALLED=0
     fi
 
     which ${mysqladmin}  >/dev/null 2>&1
@@ -1916,7 +1916,7 @@ function uninstall
         fi
         echoG Uninstalled.
     else
-        echoY "OpenLiteSpeed not installed."
+        echoY "OpenLiteSpeed is not installed."
     fi
 }
 
