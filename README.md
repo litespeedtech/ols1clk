@@ -33,8 +33,8 @@ See below for additional options and usage examples.
 | `-A` |`--adminpassword [PASSWORD]`|      To set the WebAdmin password for OpenLiteSpeed instead of using a random one.|
 |      |`--adminport [PORTNUMBER]`|          To set the WebAdmin console port number instead of 7080.|
 | `-E` |`--email [EMAIL]`|                 To set the administrator email.|
-|      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 82. We currently support versions '71 72 73 74 80 81 82 83'.|
-|      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 10.9. We currently support versions '10.2 10.3 ...10.11'.|
+|      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 83. We currently support versions '74 80 81 82 83'.|
+|      |`--mariadbver [VERSION]`  |        To set MariaDB version, such as 11.4. We currently support versions '10.6 10.11 11.4 11.6'.|
 | `-W` |`--wordpress`|                     To install WordPress. You will still need to complete the WordPress setup by browser|
 |      |  `--wordpressplus [SITEDOMAIN]`|  To install, set up, and configure WordPress, also LSCache will be enabled|
 |      |  `--wordpresspath [WP_PATH]`|     To specify a location for the new WordPress installation or use for an existing WordPress.|
