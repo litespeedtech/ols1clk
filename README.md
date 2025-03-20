@@ -2,9 +2,38 @@
 [![Build Status](https://github.com/litespeedtech/ols1clk/workflows/ols1clk/badge.svg)](https://github.com/litespeedtech/ols1clk/actions/)
 [<img src="https://img.shields.io/badge/slack-LiteSpeed-blue.svg?logo=slack">](litespeedtech.com/slack) 
 [<img src="https://img.shields.io/twitter/follow/litespeedtech.svg?label=Follow&style=social">](https://twitter.com/litespeedtech)
-## Description
 
-ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-W** parameter that will install WordPress at the same time but it must still be configured through the wp-config.php page. By default, a MariaDB database will be set up using this script, you can also specify other DB if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** parameter. To completely install WordPress with your OpenLiteSpeed installation, skipping the need for the wp-config.php page, use the **--wordpressplus** flag. This can be used with **--wpuser**, **--wppassword**, **--wplang**, and **--sitetitle** to configure each of the settings normally set by wp-config.php.
+
+# OpenLiteSpeed Installation Enhancement
+
+> This is a fork of the official OpenLiteSpeed one-click installation script, enhanced to improve installation reliability and compatibility across different operating systems.
+
+## Original Project
+- Original Repository: [OpenLiteSpeed/ols1clk](https://github.com/litespeedtech/ols1clk)
+
+## Author
+Ebrahim Shafiei (EbraSha)
+- Email: Prof.Shafiei@Gmail.com
+- GitHub: [EbraSha](https://github.com/EbraSha)
+
+## Project Description
+This enhanced version of the OpenLiteSpeed installation script focuses on fixing installation issues and improving compatibility across different Linux distributions. While maintaining the core functionality of the original script, we've added several improvements to make the installation process more reliable.
+
+## Changes and Branches By EbraSha
+
+### Branch: `ebrasha:fix-starting-system-tests`
+**Date: 2025-03-21**
+
+* Add robust system dependency installation function
+* Implement retry mechanism for service and port testing
+* Add better error handling and status reporting
+* Support both CentOS and Debian/Ubuntu systems
+* Add timeout and retry limits for network tests
+* Improve test feedback messages
+* Add service status verification
+* Add port accessibility checks with retries
+
+
 
 ## Installation
 
