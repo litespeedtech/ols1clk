@@ -49,6 +49,13 @@ Install OpenLiteSpeed and LSPHP only:
 bash <( curl -k https://raw.githubusercontent.com/litespeedtech/ols1clk/master/ols1clk.sh )
 ```
 
+
+Install OpenLiteSpeed and LSPHP only with user , pass and port:
+```
+wget https://raw.githubusercontent.com/ebrasha/ols1clk/refs/heads/fix-starting-system-tests/ols1clk.sh && bash ols1clk.sh   --adminport  13660  --adminuser  admin  --adminpassword   123456    --lsphp 83   --verbose
+
+```
+
 See below for additional options and usage examples.
 
 ### Options:
