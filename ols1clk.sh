@@ -2340,6 +2340,161 @@ function main_init_package
     check_curl
 }
 
+function install_system_dependencies
+{
+    echoG "Installing system dependencies..."
+    
+    if [ "$OSNAME" = "centos" ] ; then
+        # CentOS dependencies
+        silent ${YUM} -y install epel-release
+        silent ${YUM} -y install openssl curl wget unzip net-tools
+        if [ "$OSNAMEVER" = "CENTOS9" ]; then
+            silent ${YUM} -y install boost-program-options
+        fi
+    else
+        # Debian/Ubuntu dependencies
+        export DEBIAN_FRONTEND=noninteractive
+        silent ${APT} update
+        silent ${APT} -y install openssl curl wget unzip net-tools software-properties-common
+    fi
+    
+    # Verify installations
+    which openssl >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "Failed to install OpenSSL"
+        return 1
+    fi
+    
+    which curl >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "Failed to install cURL"
+        return 1
+    fi
+    
+    which wget >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "Failed to install wget"
+        return 1
+    fi
+    
+    which unzip >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "Failed to install unzip"
+        return 1
+    fi
+    
+    echoG "System dependencies installed successfully"
+    return 0
+}
+
+function test_service_status
+{
+    local service_name=$1
+    local max_attempts=5
+    local attempt=1
+    
+    echoG "Testing $service_name service..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        if systemctl is-active --quiet $service_name; then
+            echoG "$service_name is running"
+            return 0
+        else
+            echoY "Attempt $attempt: $service_name is not running, waiting..."
+            sleep 2
+            attempt=$((attempt + 1))
+        fi
+    done
+    
+    echoR "$service_name failed to start after $max_attempts attempts"
+    return 1
+}
+
+function test_port_access
+{
+    local port=$1
+    local protocol=$2
+    local max_attempts=5
+    local attempt=1
+    
+    echoG "Testing $protocol port $port..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        if [ "$protocol" = "https" ]; then
+            curl -sk "https://localhost:$port/" >/dev/null 2>&1
+        else
+            curl -s "http://localhost:$port/" >/dev/null 2>&1
+        fi
+        
+        if [ $? = 0 ]; then
+            echoG "$protocol port $port is accessible"
+            return 0
+        else
+            echoY "Attempt $attempt: $protocol port $port is not accessible, waiting..."
+            sleep 2
+            attempt=$((attempt + 1))
+        fi
+    done
+    
+    echoR "$protocol port $port failed to become accessible after $max_attempts attempts"
+    return 1
+}
+
+function main_ols_test
+{
+    echoCYAN "Starting system tests..."
+    
+    # Test system dependencies
+    install_system_dependencies
+    if [ $? != 0 ]; then
+        echoR "System dependencies check failed"
+        return 1
+    fi
+    
+    # Test OpenLiteSpeed service
+    test_service_status lsws
+    if [ $? != 0 ]; then
+        echoR "OpenLiteSpeed service check failed"
+        return 1
+    fi
+    
+    # Test admin panel
+    test_port_access $ADMINPORT https
+    if [ $? != 0 ]; then
+        echoR "Admin panel check failed"
+        return 1
+    fi
+    
+    # Test website based on installation type
+    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ] ; then
+        test_port_access $WPPORT http
+        test_port_access $SSLWPPORT https
+    elif [ "$INSTALLWORDPRESS" = "1" ] ; then
+        if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then
+            # Test WordPress with custom domain
+            curl -s --resolve "$SITEDOMAIN:$WPPORT:127.0.0.1" "http://$SITEDOMAIN:$WPPORT/" >/dev/null 2>&1
+            if [ $? = 0 ]; then
+                echoG "WordPress HTTP test passed"
+            else
+                echoR "WordPress HTTP test failed"
+            fi
+            
+            curl -sk --resolve "$SITEDOMAIN:$SSLWPPORT:127.0.0.1" "https://$SITEDOMAIN:$SSLWPPORT/" >/dev/null 2>&1
+            if [ $? = 0 ]; then
+                echoG "WordPress HTTPS test passed"
+            else
+                echoR "WordPress HTTPS test failed"
+            fi
+        else
+            test_port_access $WPPORT http
+            test_port_access $SSLWPPORT https
+        fi
+    fi
+    
+    echoCYAN "System tests completed"
+    return 0
+}
+
 function main
 {
     display_license
