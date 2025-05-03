@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2024 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2025 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -73,7 +73,7 @@ MARIADBVER=11.4
 #MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
-OWASP_V='4.2.0'
+OWASP_V='4.14.0'
 SET_OWASP=
 ALLERRORS=0
 TEMPPASSWORD=
@@ -550,14 +550,12 @@ function install_ols_debian
         action=
     fi
     echoB "${FPACE} - $1 lsphp$LSPHPVER"
-    silent ${APT} -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-imap lsphp$LSPHPVER-curl
+    silent ${APT} -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-curl lsphp$LSPHPVER-common
 
-    if [ "$LSPHPVER" = "56" ]; then
-        silent ${APT} -y install $action lsphp$LSPHPVER-gd lsphp$LSPHPVER-mcrypt
-    elif [[ "$LSPHPVER" == 8* ]]; then
-        silent ${APT} -y install $action lsphp$LSPHPVER-common
-    else
-        silent ${APT} -y install $action lsphp$LSPHPVER-common lsphp$LSPHPVER-json
+    if [[ "$LSPHPVER" =~ (81|82|83) ]]; then
+        silent ${APT} -y install $action lsphp$LSPHPVER-imap
+    elif [[ "$LSPHPVER" == 7* ]]; then
+        silent ${APT} -y install $action lsphp$LSPHPVER-imap lsphp$LSPHPVER-json
     fi
 
     if [ $? != 0 ] ; then
