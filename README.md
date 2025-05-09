@@ -2,6 +2,7 @@
 [![Build Status](https://github.com/litespeedtech/ols1clk/workflows/ols1clk/badge.svg)](https://github.com/litespeedtech/ols1clk/actions/)
 [<img src="https://img.shields.io/badge/slack-LiteSpeed-blue.svg?logo=slack">](litespeedtech.com/slack) 
 [<img src="https://img.shields.io/twitter/follow/litespeedtech.svg?label=Follow&style=social">](https://twitter.com/litespeedtech)
+
 ## Description
 
 ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-W** parameter that will install WordPress at the same time but it must still be configured through the wp-config.php page. By default, a MariaDB database will be set up using this script, you can also specify other DB if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** parameter. To completely install WordPress with your OpenLiteSpeed installation, skipping the need for the wp-config.php page, use the **--wordpressplus** flag. This can be used with **--wpuser**, **--wppassword**, **--wplang**, and **--sitetitle** to configure each of the settings normally set by wp-config.php.
@@ -55,7 +56,8 @@ See below for additional options and usage examples.
 |      |   `--with-mysql`  |               To install OpenLiteSpeed/App with MySQL.|
 |      |   `--with-percona`  |             To install OpenLiteSpeed/App with Percona.|
 |      |   `--owasp-enable`  |             To enable mod_security with OWASP rules. If OLS is installed, then enable the owasp directly|
-|      |   `--owasp-disable`  |            To disable mod_security with OWASP rules.|    
+|      |   `--owasp-disable`  |            To disable mod_security with OWASP rules.|
+|      |   `--fail2ban-disable`  |         To enable fail2ban for webadmin and wordpress login pages.| 
 |      |   `--proxy-r`  |                  To set a proxy with rewrite type.|
 |      |   `--proxy-c`  |                  To set a proxy with config type.|
 | `-U` |   `--uninstall`  |                To uninstall OpenLiteSpeed and remove installation directory.|
@@ -70,7 +72,7 @@ See below for additional options and usage examples.
 |    Examples    | Description|
 |---|---|
 |      `./ols1clk.sh`                       |To install OpenLiteSpeed with a random WebAdmin password.|
-|      `./ols1clk.sh --lsphp 81 `           |To install OpenLiteSpeed with lsphp80.|
+|      `./ols1clk.sh --lsphp 84 `           |To install OpenLiteSpeed with lsphp84.|
 |      `./ols1clk.sh -A 123456 -e a@cc.com` |To install OpenLiteSpeed with WebAdmin password  "123456" and email a@cc.com.|
 |      `./ols1clk.sh -R 123456 -W `         |To install OpenLiteSpeed with WordPress and MySQL root password "123456".|
 |      `./ols1clk.sh --wordpressplus a.com` |To install OpenLiteSpeed with a fully configured WordPress installation at "a.com".|

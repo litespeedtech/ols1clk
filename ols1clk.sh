@@ -75,6 +75,7 @@ PERCONAVER=80
 WEBADMIN_LSPHPVER=74
 OWASP_V='4.14.0'
 SET_OWASP=
+SET_fail2ban=
 ALLERRORS=0
 TEMPPASSWORD=
 ACTION=INSTALL
@@ -257,6 +258,7 @@ function usage
     echoW " --with-percona                    " "To install OpenLiteSpeed/App with Percona"
     echoW " --owasp-enable                    " "To enable mod_security with OWASP rules. If OLS is installed, then enable the owasp directly"
     echoW " --owasp-disable                   " "To disable mod_security with OWASP rules."
+    echoW " --fail2ban-enable                 " "To enable fail2ban for webadmin and wordpress login pages"
     echoW " --proxy-r                         " "To set a proxy with rewrite type."
     echoW " --proxy-c                         " "To set a proxy with config type."
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
@@ -280,8 +282,8 @@ function usage
 function display_license
 {
     echoY '**********************************************************************************************'
-    echoY '*                    Open LiteSpeed One click installation, Version 3.1                      *'
-    echoY '*                    Copyright (C) 2016 - 2024 LiteSpeed Technologies, Inc.                  *'
+    echoY '*                    Open LiteSpeed One click installation, Version 3.2                      *'
+    echoY '*                    Copyright (C) 2016 - 2025 LiteSpeed Technologies, Inc.                  *'
     echoY '**********************************************************************************************'
 }
 
@@ -461,13 +463,13 @@ function install_ols_centos
     if [ "$action" = "reinstall" ] ; then
         silent ${YUM} -y remove lsphp$LSPHPVER-mysqlnd
     fi
-    silent ${YUM} -y install lsphp$LSPHPVER-mysqlnd
-    if [[ "$LSPHPVER" == 8* ]]; then 
-        silent ${YUM} -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring \
-        lsphp$LSPHPVER-xml lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
-    else
-        silent ${YUM} -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring \
-        lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON
+    silent ${YUM} -y install lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring \
+        lsphp$LSPHPVER-mysqlnd lsphp$LSPHPVER-xml lsphp$LSPHPVER-pdo 
+
+    if [[ "$LSPHPVER" =~ (81|82|83) ]]; then
+        silent ${YUM} -y $action lsphp$LSPHPVER-imap
+    elif [[ "$LSPHPVER" == 7* ]]; then
+        silent ${YUM} -y $action lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-imap lsphp$LSPHPVER-$JSON
     fi
     if [ $? != 0 ] ; then
         echoR "An error occured during OpenLiteSpeed installation."
@@ -1074,6 +1076,85 @@ function install_owasp
     unzip -qq v${OWASP_V}.zip
     rm -f v${OWASP_V}.zip
     mv coreruleset-* ${CRS_DIR}
+}
+
+function centos_install_fail2ban
+{
+    ${YUM} -y install fail2ban >/dev/null 2>&1
+}
+
+function debian_install_fail2ban
+{
+    ${APT} -y install fail2ban >/dev/null 2>&1
+    
+}
+
+function install_fail2ban
+{
+    if [ ! -f /etc/fail2ban/fail2ban.conf ]; then
+        echoB "${FPACE} - Install fail2ban Package"
+        if [ "$OSNAME" = "centos" ] ; then
+            centos_install_fail2ban
+        else
+            debian_install_fail2ban
+        fi
+        systemctl enable fail2ban >/dev/null 2>&1
+    fi
+}
+
+function configure_fail2ban
+{
+    echoG 'Configure fail2ban'
+    if [ ! -f /etc/fail2ban/filter.d/wordpress.conf ]; then
+        echoB "${FPACE} - Create wordpress.conf filter"
+        cat << EOF > /etc/fail2ban/filter.d/wordpress.conf
+[Definition]
+failregex = <HOST> .* "POST /wp-login.php HTTP.*
+            <HOST> .* "POST /xmlrpc.php HTTP.*
+ignoreregex =
+EOF
+    else
+        echoY 'wordpress.conf exist, skip!'
+    fi
+if [ ! -f /etc/fail2ban/filter.d/webadmin.conf ]; then
+        echoB "${FPACE} - Create webadmin.conf filter"
+        cat << EOF > /etc/fail2ban/filter.d/webadmin.conf
+[Definition]
+failregex = \[.*#_AdminVHost\].*Failed Login Attempt.*ip:<HOST>
+ignoreregex =
+EOF
+    else
+        echoY 'webadmin.conf exist, skip!'
+    fi
+    if [ ! -f /etc/fail2ban/jail.local ]; then
+        echoB "${FPACE} - Create jail.local config"
+        cat << EOF > /etc/fail2ban/jail.local
+[DEFAULT]
+bantime = 300
+findtime = 60
+maxretry = 10
+banaction = iptables-multiport
+
+[webadmin]
+enabled = true
+port = 7080
+filter = webadmin
+ignoreip = 127.0.0.1 ::1 0.0.0.0
+backend = polling
+logpath = /usr/local/lsws/admin/logs/error.log
+
+[wordpress]
+enabled = true
+port = http,https
+filter = wordpress
+ignoreip = 127.0.0.1 ::1 0.0.0.0
+backend = polling
+logpath = /usr/local/lsws/logs/access.log
+EOF
+    else
+        echoY 'Detect jail.local file exists, skip!'
+    fi
+    systemctl restart fail2ban
 }
 
 function centos_install_modsecurity
@@ -1779,6 +1860,11 @@ END
             mkdir -p $SERVER_ROOT/conf/vhosts/wordpress/
             cat > $VHOSTCONF <<END
 docRoot                   \$VH_ROOT/
+
+accesslog  {
+  useServer               1
+}
+
 index  {
   useServer               0
   indexFiles              index.php
@@ -2102,6 +2188,16 @@ function befor_install_display
     echoCYAN 'Start OpenLiteSpeed one click installation >> >> >> >> >> >> >>'
 }
 
+function main_fail2ban
+{
+    if [ "${SET_fail2ban}" = 'ON' ]; then
+        echoG "Start Enable fail2ban"
+        install_fail2ban
+        configure_fail2ban
+        echoG "End Enable fail2ban"
+    fi
+}
+
 function main_owasp
 {
     if [ "${SET_OWASP}" = 'ON' ]; then
@@ -2356,6 +2452,7 @@ function main
     main_install_wordpress
     config_server
     main_owasp
+    main_fail2ban
     set_proxy_vh
     restart_lsws
     after_install_display
@@ -2501,6 +2598,7 @@ while [ ! -z "${1}" ] ; do
         --owasp-enable )
                 if [ -e ${WEBCF} ]; then
                     SET_OWASP='ON'
+                    check_os
                     main_owasp
                     exit 0
                 else
@@ -2510,7 +2608,17 @@ while [ ! -z "${1}" ] ; do
         --owasp-disable )
                 disable_ols_modesec
                 exit 0
-                ;;                                                               
+                ;;
+        --fail2ban-enable )
+                if [ -e ${WEBCF} ]; then
+                    SET_fail2ban='ON'
+                    check_os
+                    main_fail2ban
+                    exit 0
+                else
+                    SET_fail2ban='ON'
+                fi    
+                ;;                                                                              
         -[Pp] | --purgeall )        
                 ACTION=PURGEALL
                 ;;
