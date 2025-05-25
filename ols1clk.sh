@@ -2502,14 +2502,15 @@ function main_init_package
 
 
 
-if [ $# -eq 0 ]; then
-    interactive_setup
-fi
+
 
 function main
 {
     display_license
     main_init_check
+    if [ $# -eq 0 ]; then
+    interactive_setup
+    fi
     action_uninstall
     action_purgeall
     update_email
