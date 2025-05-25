@@ -2544,8 +2544,8 @@ function main
 
 if [ $# -eq 0 ]; then
     interactive_setup
-else
-    while [ ! -z "${1}" ] ; do
+fi
+while [ ! -z "${1}" ] ; do
             case "${1}" in
         --adminuser )  
                 check_value_follow "$2" ""
@@ -2729,8 +2729,8 @@ else
         * )                     
                 usage
                 ;;
-            esac
-            shift
-    done
-fi
+    esac
+    shift
+done
+
 main
