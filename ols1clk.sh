@@ -279,6 +279,89 @@ function usage
     exit 0
 }
 
+function interactive_setup()
+{
+    echo
+    echoY "OpenLiteSpeed Interactive Installation"
+    echo "======================================"
+    echo
+    
+    echo -n "Install, setup, and configure OpenLiteSpeed, WordPress and LSCache? (y/n): "
+    read -r wp_install
+    if [[ "$wp_install" =~ ^[Yy]$ ]]; then
+        INSTALLWORDPRESSPLUS=1
+        
+        echo -n "Enter the website domain: "
+        read -r domain_input
+        if [ -n "$domain_input" ]; then
+            SITEDOMAIN="$domain_input"
+        fi
+    fi
+    
+    echo -n "Enter the database name (--dbname) [leave empty for default: $DATABASENAME]: "
+    read -r db_name
+    if [ -n "$db_name" ]; then
+        DATABASENAME="$db_name"
+    fi
+    
+    echo -n "Enter the database password (--dbpassword) [leave empty for random]: "
+    read -r -s db_password
+    echo
+    if [ -n "$db_password" ]; then
+        USERPASSWORD="$db_password"
+    fi
+    
+    echo -n "Enter the database root password (--dbrootpassword) [leave empty for random]: "
+    read -r -s db_root_password
+    echo
+    if [ -n "$db_root_password" ]; then
+        ROOTPASSWORD="$db_root_password"
+    fi
+    
+    echo -n "Enter the OpenLiteSpeed admin password (--adminpassword) [leave empty for random]: "
+    read -r -s admin_password
+    echo
+    if [ -n "$admin_password" ]; then
+        ADMINPASSWORD="$admin_password"
+    fi
+    
+    echo -n "Enter the WordPress admin username (--wpuser) [leave empty for default: $WPUSER]: "
+    read -r wp_user
+    if [ -n "$wp_user" ]; then
+        WPUSER="$wp_user"
+    fi
+    
+    echo -n "Enter the WordPress admin password (--wppassword) [leave empty for random]: "
+    read -r -s wp_password
+    echo
+    if [ -n "$wp_password" ]; then
+        WPPASSWORD="$wp_password"
+    fi
+    
+    echo "Available LSPHP versions: ${LSPHPVERLIST[@]}"
+    echo -n "Enter the LSPHP version (--lsphp) [leave empty for default: $LSPHPVER]: "
+    read -r lsphp_version
+    if [ -n "$lsphp_version" ]; then
+        LSPHPVER="$lsphp_version"
+    fi
+    
+    echo -n "Enable fail2ban for OLS Panel, SSH and WordPress login pages? (y/n) [leave empty for no]: "
+    read -r fail2ban_choice
+    if [[ "$fail2ban_choice" =~ ^[Yy]$ ]]; then
+        SET_fail2ban='ON'
+    fi
+    
+    echo -n "Enable verbose mode for detailed output? (y/n) [leave empty for no]: "
+    read -r verbose_choice
+    if [[ "$verbose_choice" =~ ^[Yy]$ ]]; then
+        VERBOSE=1
+    fi
+    
+    echo
+    echoG "Configuration completed. Starting installation..."
+    echo
+}
+
 function display_license
 {
     echoY '**********************************************************************************************'
@@ -2459,8 +2542,11 @@ function main
     main_ols_test
 }
 
-while [ ! -z "${1}" ] ; do
-    case "${1}" in
+if [ $# -eq 0 ]; then
+    interactive_setup
+else
+    while [ ! -z "${1}" ] ; do
+            case "${1}" in
         --adminuser )  
                 check_value_follow "$2" ""
                 if [ ! -z "$FOLLOWPARAM" ] ; then shift; fi
@@ -2643,8 +2729,8 @@ while [ ! -z "${1}" ] ; do
         * )                     
                 usage
                 ;;
-    esac
-    shift
-done
-
+            esac
+            shift
+    done
+fi
 main
