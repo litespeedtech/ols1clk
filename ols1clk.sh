@@ -269,7 +269,7 @@ function interactive_setup()
     echo "======================================"
     echo
     
-    echo -n "Install, setup, and configure OpenLiteSpeed, WordPress and LSCache? (y/n): "
+    echo -n "Install, setup, and configure WordPress & LSCache? (y/n): "
     read -r wp_install
     if [[ "$wp_install" =~ ^[Yy]$ ]]; then
         INSTALLWORDPRESSPLUS=1
@@ -287,21 +287,21 @@ function interactive_setup()
         DATABASENAME="$db_name"
     fi
     
-    echo -n "Enter the database password (--dbpassword) [leave empty for random]: "
+    echo -n "Enter the database password (--dbpassword) [leave empty for default]: "
     read -r -s db_password
     echo
     if [ -n "$db_password" ]; then
         USERPASSWORD="$db_password"
     fi
     
-    echo -n "Enter the database root password (--dbrootpassword) [leave empty for random]: "
+    echo -n "Enter the database root password (--dbrootpassword) [leave empty for default]: "
     read -r -s db_root_password
     echo
     if [ -n "$db_root_password" ]; then
         ROOTPASSWORD="$db_root_password"
     fi
     
-    echo -n "Enter the OpenLiteSpeed admin password (--adminpassword) [leave empty for random]: "
+    echo -n "Enter the OpenLiteSpeed admin password (--adminpassword) [leave empty for default]: "
     read -r -s admin_password
     echo
     if [ -n "$admin_password" ]; then
@@ -314,7 +314,7 @@ function interactive_setup()
         WPUSER="$wp_user"
     fi
     
-    echo -n "Enter the WordPress admin password (--wppassword) [leave empty for random]: "
+    echo -n "Enter the WordPress admin password (--wppassword) [leave empty for default]: "
     read -r -s wp_password
     echo
     if [ -n "$wp_password" ]; then
