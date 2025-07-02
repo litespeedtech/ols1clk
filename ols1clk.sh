@@ -68,12 +68,12 @@ USERPASSWORD=
 WPPASSWORD=
 LSPHPVERLIST=(74 80 81 82 83 84)
 MARIADBVERLIST=(10.5 10.6 10.11 11.4 11.6 11.8)
-LSPHPVER=83
+LSPHPVER=84
 MARIADBVER=11.4
 #MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
-OWASP_V='4.14.0'
+OWASP_V='4.16.0'
 SET_OWASP=
 SET_fail2ban=
 ALLERRORS=0
@@ -2394,7 +2394,7 @@ function main_ols_test
 {
     echoCYAN "Start auto testing >> >> >> >>"
     test_ols_admin
-    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ] ; then 
+    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ] || [ "${INSTALLWORDPRESS}" = '0' ]; then 
         test_ols
     elif [ "$INSTALLWORDPRESS" = "1" ] ; then
         if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then
