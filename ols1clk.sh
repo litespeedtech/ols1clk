@@ -51,7 +51,7 @@ CLASSICPRESSPATH=$SERVER_ROOT/classicpress
 PWD_FILE=$SERVER_ROOT/password
 WPPORT=80
 SSLWPPORT=443
-WORDPRESSINSTALLED=
+CLASSICPRESSINSTALLED=
 INSTALLCLASSICPRESS=0
 INSTALLCLASSICPRESSPLUS=0
 FORCEYES=0
@@ -90,7 +90,7 @@ APT='apt-get -qq'
 YUM='yum -q'
 mysqladmin='mysqladmin'
 mysql='mysql'
-MYGITHUBURL=https://raw.githubusercontent.com/litespeedtech/ols1clk/refs/heads/classicpress/ols1clk.sh
+MYGITHUBURL=https://raw.githubusercontent.com/litespeedtech/ols1clk/classicpress/ols1clk.sh
 
 function echoY
 {
@@ -239,7 +239,7 @@ function usage
     echoW " --mariadbver [VERSION]            " "To set MariaDB version, such as 11.4. We currently support versions '${MARIADBVERLIST[@]}'."
     echoNW "  -C,    --classicpress        " "${EPACE} To install ClassicPress. You will still need to complete the ClassicPress setup by browser"
     echoW " --classicpressplus [SITEDOMAIN]      " "To install, setup, and configure ClassicPress, also LSCache will be enabled"
-    echoW " --CLASSICPRESSPATH [WP_PATH]      " "To specify a location for the new ClassicPress installation or an existing ClassicPress."
+    echoW " --classicpresspath [WP_PATH]      " "To specify a location for the new ClassicPress installation or an existing ClassicPress."
     echoNW "  -R,    --dbrootpassword [PASSWORD]  " "     To set the database root password instead of using a random one."
     echoW " --dbname [DATABASENAME]           " "To set the database name to be used by ClassicPress."
     echoW " --dbuser [DBUSERNAME]             " "To set the ClassicPress username in the database."
@@ -658,7 +658,7 @@ END
     fi
 }
 
-function download_wordpress
+function download_classicpress
 {
     echoG 'Start Download ClassicPress file'
     if [ ! -e "$CLASSICPRESSPATH" ] ; then
@@ -669,7 +669,7 @@ function download_wordpress
     else
         echoG "$CLASSICPRESSPATH exists, will use it."
     fi
-    if [ "${WORDPRESSINSTALLED}" = '0' ];then 
+    if [ "${CLASSICPRESSINSTALLED}" = '0' ];then 
         cd $CLASSICPRESSPATH
         wget -q --no-check-certificate https://www.classicpress.net/latest.zip -O classicpress.zip
         unzip -qq classicpress.zip 
@@ -679,7 +679,7 @@ function download_wordpress
     echoG 'End Download ClassicPress file'
 }
 
-function create_wordpress_cf
+function create_classicpress_cf
 {
     echoG 'Start Create ClassicPress config'
     if [ -e "$CLASSICPRESSPATH/wp-config-sample.php" ] ; then
@@ -2214,11 +2214,11 @@ function befor_install_display
             echoY "ClassicPress plus:        " No
         fi
         echoY "ClassicPress location:    " "$CLASSICPRESSPATH (New install)"
-        WORDPRESSINSTALLED=0
+        CLASSICPRESSINSTALLED=0
         
     elif [ "$INSTALLCLASSICPRESS" = "1" ] && [ -e "$CLASSICPRESSPATH/wp-config.php" ]; then
         echoY "ClassicPress location:       " "$CLASSICPRESSPATH (Existing)"
-        WORDPRESSINSTALLED=1
+        CLASSICPRESSINSTALLED=1
     else
         echoY "Server HTTP port:         " "$WPPORT"
         echoY "Server HTTPS port:        " "$SSLWPPORT"
@@ -2302,12 +2302,12 @@ function main_pure_db
     fi    
 }
 
-function main_install_wordpress
+function main_install_classicpress
 {
     if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ]; then 
         echoG 'Skip ClassicPress setup.'
     else
-        if [ "$WORDPRESSINSTALLED" = '1' ] ; then
+        if [ "$CLASSICPRESSINSTALLED" = '1' ] ; then
             echoY 'Skip ClassicPress installation!'
             config_vh_wp
             check_port_usage
@@ -2340,11 +2340,11 @@ function main_install_wordpress
                         setup_mariadb_user
                     fi    
                 fi
-                download_wordpress
-                create_wordpress_cf
+                download_classicpress
+                create_classicpress_cf
                 if [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then            
                     run_cp_admin
-                    echo "WordPress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> ${PWD_FILE} 
+                    echo "ClassicPress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> ${PWD_FILE} 
                 fi
                 change_owner ${CLASSICPRESSPATH}
                 install_postfix
@@ -2373,7 +2373,7 @@ function after_install_display
         echoY "Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
     fi
     if [ "$INSTALLCLASSICPRESSPLUS" = "0" ] && [ "$INSTALLCLASSICPRESS" = "1" ] && [ "${PURE_DB}" = '0' ] && [ "${PURE_MYSQL}" = '0' ]; then
-        echo "Please access http://server_IP:$WPPORT/ to finish setting up your WordPress site."
+        echo "Please access http://server_IP:$WPPORT/ to finish setting up your ClassicPress site."
         echo "Also, you may want to activate the LiteSpeed Cache plugin to get better performance."
     fi
     if [ "${PROXY_TYPE}" = 'r' ]; then
@@ -2416,7 +2416,7 @@ function test_ols
     fi    
 }
 
-function test_wordpress
+function test_classicpress
 {
     if [ ${PROXY} = 0 ]; then
         test_page http://localhost:8088/  Congratulation "test Example vhost page"
@@ -2427,15 +2427,15 @@ function test_wordpress
     test_page https://localhost:$SSLWPPORT/ "classicpress" "test classicpress HTTPS first page"
 }
 
-function test_wordpress_plus
+function test_classicpress_plus
 {
     if [ ${PROXY} = 0 ]; then
         test_page http://localhost:8088/  Congratulation "test Example vhost page"
     else
         echoG 'Proxy is on, skip the test!'
     fi        
-    test_page "http://$SITEDOMAIN:$WPPORT/ --resolve $SITEDOMAIN:$WPPORT:127.0.0.1" WordPress "test wordpress HTTP first page"
-    test_page "https://$SITEDOMAIN:$SSLWPPORT/ --resolve $SITEDOMAIN:$SSLWPPORT:127.0.0.1" WordPress "test wordpress HTTPS first page"
+    test_page "http://$SITEDOMAIN:$WPPORT/ --resolve $SITEDOMAIN:$WPPORT:127.0.0.1" WordPress "test classicpress HTTP first page"
+    test_page "https://$SITEDOMAIN:$SSLWPPORT/ --resolve $SITEDOMAIN:$SSLWPPORT:127.0.0.1" WordPress "test classicpress HTTPS first page"
 }
 
 
@@ -2447,12 +2447,12 @@ function main_ols_test
         test_ols
     elif [ "$INSTALLCLASSICPRESS" = "1" ] ; then
         if [ "$INSTALLCLASSICPRESSPLUS" = "1" ] ; then
-            test_wordpress_plus
+            test_classicpress_plus
         else
-            test_wordpress
+            test_classicpress
         fi
     else
-        test_wordpress
+        test_classicpress
     fi
 
     if [ "${TESTGETERROR}" = "yes" ] ; then
@@ -2499,7 +2499,7 @@ function main
     gen_selfsigned_cert
     main_pure_db
     config_php
-    main_install_wordpress
+    main_install_classicpress
     config_server
     main_owasp
     main_fail2ban
