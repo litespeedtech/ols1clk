@@ -69,11 +69,11 @@ WPPASSWORD=
 LSPHPVERLIST=(74 80 81 82 83 84)
 MARIADBVERLIST=(10.5 10.6 10.11 11.4 11.6 11.8)
 LSPHPVER=84
-MARIADBVER=11.4
+MARIADBVER=11.8
 #MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
-OWASP_V='4.16.0'
+OWASP_V='4.18.0'
 SET_OWASP=
 SET_fail2ban=
 ALLERRORS=0
@@ -283,7 +283,7 @@ function display_license
 {
     echoY '**********************************************************************************************'
     echoY '*                    Open LiteSpeed One click installation, Version 3.2                      *'
-    echoY '*                    Copyright (C) 2016 - 2025 LiteSpeed Technologies, Inc.                  *'
+    echoY "*                    Copyright (C) 2016 - $(date +%Y) LiteSpeed Technologies, Inc.                  *"
     echoY '**********************************************************************************************'
 }
 
@@ -293,94 +293,33 @@ function check_os
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-        case $(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1) in 
-        7)
-            OSNAMEVER=CENTOS7
-            OSVER=7
-            ;;
-        8)
-            OSNAMEVER=CENTOS8
-            OSVER=8
-            ;;
-        9)
-            OSNAMEVER=CENTOS9
-            OSVER=9
-            ;;            
-        esac
+        OSVER=$(grep -oE '[0-9]+' /etc/centos-release | head -1)
+        OSNAMEVER="CENTOS${OSVER}"
     elif [ -f /etc/redhat-release ] ; then
         OSNAME=centos
         USER='nobody'
         GROUP='nobody'
-        case $(cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1) in 
-        7)
-            OSNAMEVER=CENTOS7
-            OSVER=7
-            ;;
-        8)
-            OSNAMEVER=CENTOS8
-            OSVER=8
-            ;;
-        9)
-            OSNAMEVER=CENTOS9
-            OSVER=9
-            ;;            
-        esac             
+        OSVER=$(grep -oE '[0-9]+' /etc/redhat-release | head -1)
+        OSNAMEVER="CENTOS${OSVER}"            
     elif [ -f /etc/lsb-release ] ; then
         OSNAME=ubuntu
         USER='nobody'
         GROUP='nogroup'
-        case $(cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2) in
-        bionic)
-            OSNAMEVER=UBUNTU18
-            OSVER=bionic
-            MARIADBCPUARCH="arch=amd64"
-            ;;
-        focal)            
-            OSNAMEVER=UBUNTU20
-            OSVER=focal
-            MARIADBCPUARCH="arch=amd64"
-            ;;
-        jammy)            
-            OSNAMEVER=UBUNTU22
-            OSVER=jammy
-            MARIADBCPUARCH="arch=amd64"
-            ;;          
-        noble)            
-            OSNAMEVER=UBUNTU24
-            OSVER=noble
-            MARIADBCPUARCH="arch=amd64"
-            ;;                
-        esac
+        OSVER=$(grep VERSION_ID /etc/os-release | cut -d\" -f2 | cut -d. -f1)
+        OSNAMEVER="UBUNTU${OSVER}"
+        MARIADBCPUARCH="arch=amd64"
+
     elif [ -f /etc/debian_version ] ; then
         OSNAME=debian
         USER='nobody'
         GROUP='nogroup'        
-        case $(cat /etc/os-release | grep VERSION_CODENAME | cut -d = -f 2) in
-        stretch) 
-            OSNAMEVER=DEBIAN9
-            OSVER=stretch
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        buster)
-            OSNAMEVER=DEBIAN10
-            OSVER=buster
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        bullseye)
-            OSNAMEVER=DEBIAN11
-            OSVER=bullseye
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;
-        bookworm)
-            OSNAMEVER=DEBIAN12
-            OSVER=bookworm
-            MARIADBCPUARCH="arch=amd64,i386"
-            ;;            
-        esac    
+        OSVER=$(grep VERSION_ID /etc/os-release | cut -d\" -f2)
+        OSNAMEVER="DEBIAN${OSVER}"
+        MARIADBCPUARCH="arch=amd64,i386" 
     fi
 
     if [ "$OSNAMEVER" = '' ] ; then
-        echoR "Sorry, currently one click installation only supports Centos(7-9), Debian(10-12) and Ubuntu(18,20,22,24)."
+        echoR "Sorry, currently one click installation only supports Centos(7+), Debian(10+) and Ubuntu(20+)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
         exit 1
@@ -389,7 +328,7 @@ function check_os
             echoG "Current platform is "  "$OSNAME $OSVER."
         else
             export DEBIAN_FRONTEND=noninteractive
-            echoG "Current platform is "  "$OSNAMEVER $OSNAME $OSVER."
+            echoG "Current platform is "  "$OSNAME $OSVER."
         fi
     fi
 }
@@ -422,9 +361,9 @@ function get_memory
 
 function check_memory
 {
-    if [ "${OSNAMEVER}" = 'CENTOS9' ]; then
+    if [ "$OSNAME" = 'centos' ] && [ "${OSVER}" -ge 9 ]; then
         get_memory
-        if [ "$RAM_KB" -lt "1800000" ]; then
+        if [ "$RAM_KB" -lt "1700000" ]; then
             echoR 'remi package needs at least 2GB RAM to install it. Exit!'
             exit 1
         fi
@@ -445,7 +384,7 @@ function install_ols_centos
         JSON=lsphp$LSPHPVER-json
     fi
 
-    if [ "${OSNAMEVER}" = 'CENTOS9' ]; then
+    if [ "${OSNAMEVER}" != 'CENTOS8' ]; then
         echoB "${FPACE} - add remi repo"
     else
         echoB "${FPACE} - add epel repo"
@@ -819,38 +758,11 @@ function centos_install_mariadb
 {
     echoB "${FPACE} - Add MariaDB repo"
     curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
-#    local REPOFILE=/etc/yum.repos.d/MariaDB.repo
-#    if [ ! -f $REPOFILE ] ; then
-#        local CENTOSVER=
-#        if [ "$OSTYPE" != "x86_64" ] ; then
-#            CENTOSVER=centos$OSVER-x86
-#        else
-#            CENTOSVER=centos$OSVER-amd64
-#        fi
-#        if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
-#            rpm --quiet --import https://downloads.mariadb.com/MariaDB/MariaDB-Server-GPG-KEY
-#            cat >> $REPOFILE <<END
-#[mariadb]
-#name = MariaDB
-#baseurl = https://downloads.mariadb.com/MariaDB/mariadb-$MARIADBVER/yum/rhel/\$releasever/\$basearch
-#gpgkey = file:///etc/pki/rpm-gpg/MariaDB-Server-GPG-KEY
-#gpgcheck=1
-#enabled = 1
-#module_hotfixes = 1
-#END
-#        else
-#            cat >> $REPOFILE <<END
-#[mariadb]
-#name = MariaDB
-#baseurl = http://yum.mariadb.org/$MARIADBVER/$CENTOSVER
-#gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-#gpgcheck=1
-
-#END
-#        fi 
-#    fi
     echoB "${FPACE} - Install MariaDB"
-    if [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS9" ]; then
+    if [ "$OSVER" -ge 10 ]; then
+        sed -i '/\[mariadb-maxscale\]/,/enabled[[:space:]]*=[[:space:]]*1/s/enabled[[:space:]]*=[[:space:]]*1/enabled=0/' /etc/yum.repos.d/mariadb.repo
+    fi
+    if [ "$OSVER" -ge 8 ]; then
         silent ${YUM} install -y boost-program-options
         silent ${YUM} --disablerepo=AppStream install -y MariaDB-server MariaDB-client
     else
@@ -862,29 +774,27 @@ function centos_install_mariadb
         exit 1
     fi
     echoB "${FPACE} - Start MariaDB"
-    if [ "$OSNAMEVER" = "CENTOS9" ] || [ "$OSNAMEVER" = "CENTOS8" ] || [ "$OSNAMEVER" = "CENTOS7" ] ; then
-        silent systemctl enable mariadb
-        silent systemctl start  mariadb
-    else
-        service mysql start
-    fi    
+    silent systemctl enable mariadb
+    silent systemctl start  mariadb 
 }
 
 function centos_install_mysql
 {
     echoB "${FPACE} - Add MySQL repo"
-    if [ "${OSVER}" = '9' ]; then 
-        silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm    
+    if [ "${OSVER}" = '10' ]; then
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql84-community-release-el10-2.noarch.rpm    
+    elif [ "${OSVER}" = '9' ]; then 
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql84-community-release-el9-2.noarch.rpm    
     elif [ "${OSVER}" = '8' ]; then 
-        silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el8-4.noarch.rpm
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql84-community-release-el8-2.noarch.rpm
     elif [ "${OSVER}" = '7' ]; then 
-        silent ${YUM} install -y https://dev.mysql.com/get/mysql80-community-release-el7-6.noarch.rpm
+        silent ${YUM} install -y https://dev.mysql.com/get/mysql84-community-release-el7-2.noarch.rpm
     else
         echoR 'No repo found, exit!'; exit 1
     fi
-    rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 >/dev/null 
-    yum-config-manager --disable mysql57-community >/dev/null
-    yum-config-manager --enable mysql80-community  >/dev/null
+    #rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 >/dev/null 
+    # >/dev/null
+    #yum-config-manager --enable mysql80-community  >/dev/null
     if yum search 'mysql-community-server' | grep 'mysql-community-server\.' >/dev/null 2>&1; then 
         silent ${YUM} install -y mysql-community-server
     else
@@ -924,13 +834,9 @@ function debian_install_mariadb
         silent ${APT} -y -f install software-properties-common
     fi
     echoB "${FPACE} - Add MariaDB repo"
-	#if [ "${OSNAMEVER}" = 'UBUNTU24' ]; then
-        #https://forum.hestiacp.com/t/mariadb-repos-failing/13097
-    #    echoB "${FPACE} - Skip adding MariaDB repo"
-    #else 
-        echoB "${FPACE} - Add MariaDB repo"   
-        curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
-    #fi
+    echoB "${FPACE} - Add MariaDB repo"   
+    curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
+    sed -i '/dlm.mariadb.com\/repo\/maxscale/ s/^/#/' /etc/apt/sources.list.d/mariadb.list
     echoB "${FPACE} - Update packages"
     ${APT} update
     echoB "${FPACE} - Install MariaDB"
@@ -950,33 +856,8 @@ function debian_install_mariadb
 function debian_install_mysql
 {
     echoB "${FPACE} - Install software properties"
-    #local MYSQL_REPO='/etc/apt/sources.list.d/mysql.list'
     silent ${APT} -y -f install software-properties-common
-    #apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29 >/dev/null 2>&1
-    #apt-key list 2>&1 | grep MySQL >/dev/null 
-    #if [ ${?} != 0 ]; then 
-    #    echoY 'Key add failed from keyserver.ubuntu.com, try pgp.mit.edu!'
-    #    apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29
-    #    apt-key list 2>&1 | grep MySQL >/dev/null 
-    #    if [ ${?} != 0 ]; then 
-    #        echoR 'Key add failed from pgp.mit.edu, please check the key issue, exit!'
-    #        exit 1
-    #    fi
-    #fi
-    #echoB "${FPACE} - Add mysql ${MYSQLVER} repo"
-    #if [ -e "${MYSQL_REPO}" ]; then
-    #    grep -Fq  "repo.mysql.com" "${MYSQL_REPO}" >/dev/null 2>&1
-    #    if [ $? != 0 ] ; then
-    #        echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"
-    #    fi
-    #else 
-    #    echo "deb http://repo.mysql.com/apt/$OSNAME $OSVER mysql-${MYSQLVER}"  > "${MYSQL_REPO}"  
-    #fi
-    #echoB "${FPACE} - Update packages"
-    #${APT} update
     echoB "${FPACE} - Install Mysql"
-    #debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password ${ROOTPASSWORD}"
-    #debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password ${ROOTPASSWORD}"
     DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-server > /dev/null 2>&1
     if [ $? != 0 ] ; then
         echoR "An error occured during installation of MYSQL. Please fix this error and try again."
@@ -2277,6 +2158,7 @@ function main_install_wordpress
                         install_mariadb
                     fi
                 else
+                    compatible_mariadb_cmd
                     test_mysql_password
                 fi
                 if [ "$TESTPASSWORDERROR" = "1" ] ; then
