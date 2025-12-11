@@ -35,12 +35,12 @@ See below for additional options and usage examples.
 ### PHP Configuration
 |  Opt |    Options    | Description|
 | :---: | ---------  | ---  |
-|      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 83. We currently support 74 80 81 82 83 84.|
+|      |`--lsphp [VERSION]`    |           To set the LSPHP version, such as 84. We currently support 74 80 81 82 83 84 85.|
 
 ### DataBase Options
 |  Opt |    Options    | Description|
 | :---: | ---------  | ---  |
-|      |`--mariadbver [VERSION]`  |        To set MariaDB version. We currently support 10.5 10.6 10.11 11.4 11.6 11.8.|
+|      |`--mariadbver [VERSION]`  |        To set MariaDB version. We currently support 10.6 10.11 11.4 11.8.|
 | `-R` | `--dbrootpassword [PASSWORD]` |   To set the database root password.|
 |      |  `--dbname [DATABASENAME]` |      To set the database name to be used by WordPress.|
 |      |  `--dbuser [DBUSERNAME]`   |      To set the WordPress username in the database.|
