@@ -698,7 +698,7 @@ function main_gen_password
 
 function main_ols_password
 {
-    echo "WebAdmin username is [admin], password is [$ADMINPASSWORD]." >> ${PWD_FILE}
+    echo "WebAdmin username is [$ADMINUSER], password is [$ADMINPASSWORD]." >> ${PWD_FILE}
     set_ols_password
 }
 
