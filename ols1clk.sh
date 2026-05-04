@@ -833,12 +833,13 @@ function debian_install_mariadb
     elif [ "$OSNAME" = "ubuntu" ]; then
         silent ${APT} -y -f install software-properties-common
     fi
-    echoB "${FPACE} - Add MariaDB repo"
-    echoB "${FPACE} - Add MariaDB repo"   
-    curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
-    sed -i '/dlm.mariadb.com\/repo\/maxscale/ s/^/#/' /etc/apt/sources.list.d/mariadb.list
-    echoB "${FPACE} - Update packages"
-    ${APT} update
+    if [ ${OSNAMEVER} != "UBUNTU26" ]; then
+        echoB "${FPACE} - Add MariaDB repo"   
+        curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
+        sed -i '/dlm.mariadb.com\/repo\/maxscale/ s/^/#/' /etc/apt/sources.list.d/mariadb.list
+        echoB "${FPACE} - Update packages"
+        ${APT} update
+    fi
     echoB "${FPACE} - Install MariaDB"
     silent ${APT} -y -f install mariadb-server
     if [ $? != 0 ] ; then
