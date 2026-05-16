@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################################
 #    Open LiteSpeed is an open source HTTP server.                           #
-#    Copyright (C) 2013 - 2025 LiteSpeed Technologies, Inc.                  #
+#    Copyright (C) 2013 - 2026 LiteSpeed Technologies, Inc.                  #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
@@ -73,7 +73,7 @@ MARIADBVER=11.8
 #MYSQLVER=8.0
 PERCONAVER=80
 WEBADMIN_LSPHPVER=74
-OWASP_V='4.21.0'
+OWASP_V='4.26.0'
 SET_OWASP=
 SET_fail2ban=
 ALLERRORS=0
@@ -405,7 +405,7 @@ function install_ols_centos
     silent ${YUM} -y install lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring \
         lsphp$LSPHPVER-mysqlnd lsphp$LSPHPVER-xml lsphp$LSPHPVER-pdo 
 
-    if [[ "$LSPHPVER" =~ (81|82|83) ]]; then
+    if (( LSPHPVER >= 81 )); then
         silent ${YUM} -y $action lsphp$LSPHPVER-imap
     elif [[ "$LSPHPVER" == 7* ]]; then
         silent ${YUM} -y $action lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-imap lsphp$LSPHPVER-$JSON
@@ -493,7 +493,7 @@ function install_ols_debian
     echoB "${FPACE} - $1 lsphp$LSPHPVER"
     silent ${APT} -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-curl lsphp$LSPHPVER-common
 
-    if [[ "$LSPHPVER" =~ (81|82|83) ]]; then
+    if (( LSPHPVER >= 81 )); then
         silent ${APT} -y install $action lsphp$LSPHPVER-imap
     elif [[ "$LSPHPVER" == 7* ]]; then
         silent ${APT} -y install $action lsphp$LSPHPVER-imap lsphp$LSPHPVER-json
