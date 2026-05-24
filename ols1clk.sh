@@ -626,7 +626,7 @@ function create_wordpress_cf
         --dbuser=$USERNAME \
         --dbpass=$USERPASSWORD \
         --dbprefix=$DBPREFIX \
-        --locale=ro_RO \
+        --locale=$WPLANGUAGE \
         --allow-root \
         --quiet
     echoG 'Done Create Wordpress config'
