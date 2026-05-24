@@ -318,7 +318,7 @@ function check_os
         MARIADBCPUARCH="arch=amd64,i386" 
     fi
 
-    if [ "$OSNAMEVER" = '' ] ; then
+    if [ -z "$OSNAMEVER" ] ; then
         echoR "Sorry, currently one click installation only supports Centos(7+), Debian(10+) and Ubuntu(20+)."
         echoR "You can download the source code and build from it."
         echoR "The url of the source code is https://github.com/litespeedtech/openlitespeed/releases."
