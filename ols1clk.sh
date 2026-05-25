@@ -21,7 +21,7 @@
 
 
 TEMPRANDSTR=
-OSNAMEVER=UNKNOWN
+OSNAMEVER=
 OSNAME=
 OSVER=
 OSTYPE=$(uname -m)
@@ -1906,7 +1906,7 @@ function read_password
 function check_dbversion_param
 {
     if [ "$OSNAMEVER" = "DEBIAN8" ] || [ "$OSNAMEVER" = "UBUNTU14" ] || [ "$OSNAMEVER" = "UBUNTU16" ]; then
-        if [ "$MARIADBVER" != '10.2' -o "$MARIADBVER" != '10.3' -o "$MARIADBVER" != '10.4' -o "$MARIADBVER" != '10.5'] ; then 
+        if [ "$MARIADBVER" != '10.2' ] && [ "$MARIADBVER" != '10.3' ] && [ "$MARIADBVER" != '10.4' ] && [ "$MARIADBVER" != '10.5' ] ; then
             echoY "We do not support "$MARIADBVER" on $OSNAMEVER, 10.5 will be used instead."
             MARIADBVER=10.5
         fi                 
