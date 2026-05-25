@@ -1019,7 +1019,7 @@ banaction = iptables-multiport
 
 [webadmin]
 enabled = true
-port = 7080
+port = ${ADMINPORT}
 filter = webadmin
 ignoreip = 127.0.0.1 ::1 0.0.0.0
 backend = polling
