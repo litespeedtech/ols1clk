@@ -423,7 +423,10 @@ function install_ols_centos
         fi          
     fi
     if [ ${INSTALLWORDPRESS} = 1 ]; then
-        silent ${YUM} -y $action lsphp$LSPHPVER-imagick lsphp$LSPHPVER-opcache lsphp$LSPHPVER-redis lsphp$LSPHPVER-memcached lsphp$LSPHPVER-intl
+        silent ${YUM} -y $action lsphp$LSPHPVER-imagick lsphp$LSPHPVER-redis lsphp$LSPHPVER-memcached lsphp$LSPHPVER-intl
+        if [ "$LSPHPVER" -lt 85 ]; then
+            silent ${APT} -y install lsphp$LSPHPVER-opcache
+        fi 
     fi    
 }
 
@@ -514,7 +517,10 @@ function install_ols_debian
         fi        
     fi
     if [ ${INSTALLWORDPRESS} = 1 ]; then
-        silent ${APT} -y install $action lsphp$LSPHPVER-imagick lsphp$LSPHPVER-opcache lsphp$LSPHPVER-redis lsphp$LSPHPVER-memcached lsphp$LSPHPVER-intl
+        silent ${APT} -y install $action lsphp$LSPHPVER-imagick lsphp$LSPHPVER-redis lsphp$LSPHPVER-memcached lsphp$LSPHPVER-intl
+        if [ "$LSPHPVER" -lt 85 ]; then
+            silent ${APT} -y install lsphp$LSPHPVER-opcache
+        fi
     fi    
 }
 
