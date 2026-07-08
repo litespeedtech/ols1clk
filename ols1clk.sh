@@ -496,7 +496,7 @@ function install_ols_debian
     echoB "${FPACE} - $1 lsphp$LSPHPVER"
     silent ${APT} -y install $action lsphp$LSPHPVER lsphp$LSPHPVER-mysql lsphp$LSPHPVER-curl lsphp$LSPHPVER-common
 
-    if (( LSPHPVER >= 81 )); then
+    if (( LSPHPVER >= 81 )) && [[ "$OSNAME" != "debian" ]]; then
         silent ${APT} -y install $action lsphp$LSPHPVER-imap
     elif [[ "$LSPHPVER" == 7* ]]; then
         silent ${APT} -y install $action lsphp$LSPHPVER-imap lsphp$LSPHPVER-json
@@ -842,7 +842,13 @@ function debian_install_mariadb
     if [ ${OSNAMEVER} != "UBUNTU26" ]; then
         echoB "${FPACE} - Add MariaDB repo"   
         curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version="mariadb-$MARIADBVER" >/dev/null 2>&1
-        sed -i '/dlm.mariadb.com\/repo\/maxscale/ s/^/#/' /etc/apt/sources.list.d/mariadb.list
+        if [[ -f /etc/apt/sources.list.d/mariadb.list ]]; then
+            sed -i '/dlm\.mariadb\.com\/repo\/maxscale/ s/^/#/' \
+                /etc/apt/sources.list.d/mariadb.list
+        elif [[ -f /etc/apt/sources.list.d/mariadb.sources ]]; then
+            sed -i '/^X-Repolib-Name:[[:space:]]*MariaDB MaxScale$/,/^$/ s/^Enabled:[[:space:]]*yes$/Enabled: no/' \
+                /etc/apt/sources.list.d/mariadb.sources
+        fi
         echoB "${FPACE} - Update packages"
         ${APT} update
     fi
