@@ -76,8 +76,11 @@ See below for additional options and usage examples.
 | :---: | --- | --- |
 |  | `--listenport [PORT]` | Set HTTP listener port (default: `80`). |
 |  | `--ssllistenport [PORT]` | Set HTTPS listener port (default: `443`). |
+|  | `--sitedomain [SITEDOMAIN]` | Set domain name mapping on listener level (default: `*`). |
+|  | `--autocert` | To install ACME and enable Automatic SSL Certificates on server level. |
 |  | `--proxy-r` | Configure proxy with rewrite type. |
 |  | `--proxy-c` | Configure proxy with config type. |
+|  | `--proxy-port [PORT]` | Configure proxy port (default: `8080`). |
 
 ### Security Configuration
 | Opt | Option | Description |
@@ -122,6 +125,20 @@ See below for additional options and usage examples.
 # Enable OWASP for OLS. This can also be used after OLS is already installed.
 ./ols1clk.sh --owasp-enable
 ```
+
+### Autocert
+Make sure your domain already points to the server.
+
+Then run:
+```bash
+./ols1clk.sh --sitedomain www.example.com --autocert
+```
+
+### Proxy custom port
+```bash
+./ols1clk.sh --proxy-r --proxy-port 7860
+```
+
 
 ## FAQ
 

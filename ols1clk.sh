@@ -44,9 +44,11 @@ PURE_MYSQL=0
 PURE_PERCONA=0
 WITH_MYSQL=0
 WITH_PERCONA=0
+AUTOCERT=0
 PROXY=0
 PROXY_TYPE=''
-PROXY_SERVER='http://127.0.0.1:8080'
+PROXY_PORT=8080
+PROXY_SERVER="http://127.0.0.1:${PROXY_PORT}"
 WORDPRESSPATH=$SERVER_ROOT/wordpress
 PWD_FILE=$SERVER_ROOT/password
 WPPORT=80
@@ -226,6 +228,7 @@ function restart_lsws
 {
     systemctl stop lsws >/dev/null 2>&1
     systemctl start lsws
+    service lsws restart
 }
 
 function usage
@@ -251,6 +254,7 @@ function usage
     echoW " --wppassword [PASSWORD]           " "To set the WordPress admin user password for WordPress dashboard login."
     echoW " --wplang [WP_LANGUAGE]            " "To set the WordPress language. Default value is \"en_US\" for English."
     echoW " --sitetitle [WP_TITLE]            " "To set the WordPress site title. Default value is mySite."
+    echoW " --sitedomain [SITEDOMAIN]         " "To set domain name mapping on listener level."    
     echoW " --pure-mariadb                    " "To install OpenLiteSpeed and MariaDB"
     echoW " --pure-mysql                      " "To install OpenLiteSpeed and MySQL"
     echoW " --pure-percona                    " "To install OpenLiteSpeed and Percona"
@@ -259,8 +263,10 @@ function usage
     echoW " --owasp-enable                    " "To enable mod_security with OWASP rules. If OLS is installed, then enable the owasp directly"
     echoW " --owasp-disable                   " "To disable mod_security with OWASP rules."
     echoW " --fail2ban-enable                 " "To enable fail2ban for webadmin and wordpress login pages"
+    echoW " --autocert                        " "To install ACME and enable Automatic SSL Certificates on server level"
     echoW " --proxy-r                         " "To set a proxy with rewrite type."
     echoW " --proxy-c                         " "To set a proxy with config type."
+    echoW " --proxy-port [PORT]               " "To set a proxy port, default value is 8080."
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
     echoNW "  -P,    --purgeall               " "${EPACE} To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL."
     echoNW "  -Q,    --quiet                  " "${EPACE} To use quiet mode, won't prompt to input anything."
@@ -1658,6 +1664,15 @@ function set_ols_password
     fi
 }
 
+function install_autocert
+{
+    if [ -f /usr/local/lsws/admin/misc/install_acme.sh ]; then
+        /usr/local/lsws/admin/misc/install_acme.sh
+    else
+        echoR '/usr/local/lsws/admin/misc/install_acme.sh is not found, skip!'    
+    fi
+}
+
 function config_server
 {
     echoB "${FPACE} - Config OpenLiteSpeed"
@@ -1668,7 +1683,6 @@ function config_server
             sed -i -e "s/ls_enabled/ls_enabled   1\n#/" "${WEBCF}"
 
             cat >> ${WEBCF} <<END
-
 listener Defaultssl {
 address                 *:$SSLWPPORT
 secure                  1
@@ -1676,14 +1690,27 @@ map                     Example *
 keyFile                 $SERVER_ROOT/conf/$KEY
 certFile                $SERVER_ROOT/conf/$CERT
 }
-
 END
+            if [ "${SITEDOMAIN}" != '*' ]; then
+                sed -Ei "s|^([[:space:]]*map[[:space:]]+Example)[[:space:]]+\*$|\1 ${SITEDOMAIN}|" "${WEBCF}"
+            fi
             chown -R lsadm:lsadm $SERVER_ROOT/conf/
         else
             echoR "${WEBCF} is missing. It appears that something went wrong during OpenLiteSpeed installation."
             ALLERRORS=1
         fi
         echo ols1clk > "$SERVER_ROOT/PLAT"
+    fi
+    if [ ${AUTOCERT} = '1' ]; then
+        install_autocert
+        if grep -q '^[[:space:]]*acme[[:space:]]' "$WEBCF"; then
+            sed -i -e 's/^\([[:space:]]*acme[[:space:]]*\)[01]$/\12/' "$WEBCF"
+        else
+            sed -i '/^tuning[[:space:]]*{$/,/^}$/{
+                /^}$/i\
+            acme                    2
+            }' "$WEBCF"
+        fi
     fi
     if [ ${PROXY} = '1' ]; then
         cat >> ${WEBCF} <<END
@@ -1836,10 +1863,19 @@ function set_proxy_vh
     fi
 }
 
+function proxy_domain
+{
+    PROXYDOMAIN='WWW.EXAMPLE.COM'
+    if [ "$SITEDOMAIN}" != '*' ]; then
+        PROXYDOMAIN="${SITEDOMAIN}"
+    fi
+}
+
 function proxy_vh_rewrite
 {
+    proxy_domain
     sed -i 's/enable[[:blank:]]*0$/enable                  1/g' ${EXAMPLE_VHOSTCONF}
-    sed -i '/^rewrite.*/a \ \ rules                   REWRITERULE ^(.*)$ HTTP://proxy-http/$1 [P,L,E=PROXY-HOST:WWW.EXAMPLE.COM]' ${EXAMPLE_VHOSTCONF}
+    sed -i "/^rewrite.*/a \ \ rules                   REWRITERULE ^(.*)$ HTTP://proxy-http/\$1 [P,L,E=PROXY-HOST:${PROXYDOMAIN}]" ${EXAMPLE_VHOSTCONF}
 }
 
 function proxy_vh_context
@@ -2021,6 +2057,7 @@ function befor_install_display
     echoY "WebAdmin password:        " "$ADMINPASSWORD"
     echoY "WebAdmin email:           " "$EMAIL"
     echoY "LSPHP version:            " "$LSPHPVER"
+
     if [ ${WITH_MYSQL} = 0 ] && [ "${PURE_MYSQL}" = 0 ] && [ "${WITH_PERCONA}" = 0 ] && [ "${PURE_PERCONA}" = 0 ] && [ "${PURE_DB}" = 0 ]; then 
         if [ ${INSTALLWORDPRESS} = 1 ]; then
             echoY "MariaDB version:          " "$MARIADBVER"
@@ -2068,7 +2105,16 @@ function befor_install_display
     else
         echoY "Server HTTP port:         " "$WPPORT"
         echoY "Server HTTPS port:        " "$SSLWPPORT"
+        if [ "$SITEDOMAIN}" != '*' ]; then
+            echoY "Web site domain:          " "$SITEDOMAIN"
+        fi
     fi
+    if [ ${AUTOCERT} = 1 ]; then
+        echoY "AutoCert:                 " "Yes"
+    fi
+    if [ ${PROXY} = 1 ]; then
+        echoY "Proxy to Port:            " "$PROXY_PORT"
+    fi    
     echoNW "Your password will be written to file:  ${PWD_FILE}"
     echo 
     if [ "$FORCEYES" != "1" ] ; then
@@ -2226,7 +2272,7 @@ function after_install_display
         echo "Also, you may want to activate the LiteSpeed Cache plugin to get better performance."
     fi
     if [ "${PROXY_TYPE}" = 'r' ]; then
-        echo "Please substitute the Default proxy address [${PROXY_SERVER}] and domain [WWW.EXAMPLE.COM] with your own value. More,"
+        echo "Please substitute the Default proxy address [${PROXY_SERVER}] and domain [${PROXYDOMAIN}] with your own value. More,"
         echoB "https://docs.openlitespeed.org/docs/advanced/proxy"
     elif [ "${PROXY_TYPE}" = 'c' ]; then
         echo "Please substitute the Default proxy address [${PROXY_SERVER}] with your own value."
@@ -2250,6 +2296,15 @@ function test_page
     fi
 }
 
+function test_domain
+{
+    if [ "${SITEDOMAIN}" = '*' ]; then
+        TESTDOMAIN=localhost
+    else
+        TESTDOMAIN="${SITEDOMAIN}"
+    fi    
+}
+
 function test_ols_admin
 {
     test_page https://localhost:${ADMINPORT}/ "LiteSpeed WebAdmin" "test webAdmin page"
@@ -2258,8 +2313,8 @@ function test_ols_admin
 function test_ols
 {
     if [ ${PROXY} = 0 ]; then
-        test_page http://localhost:$WPPORT/  Congratulation "test Example HTTP vhost page"
-        test_page https://localhost:$SSLWPPORT/  Congratulation "test Example HTTPS vhost page"
+        test_page http://${TESTDOMAIN}:$WPPORT/  Congratulation "test Example HTTP vhost page"
+        test_page https://${TESTDOMAIN}:$SSLWPPORT/  Congratulation "test Example HTTPS vhost page"
     else
         echoG 'Proxy is on, skip the test!'
     fi    
@@ -2268,18 +2323,18 @@ function test_ols
 function test_wordpress
 {
     if [ ${PROXY} = 0 ]; then
-        test_page http://localhost:8088/  Congratulation "test Example vhost page"
+        test_page http://${TESTDOMAIN}:8088/  Congratulation "test Example vhost page"
     else
         echoG 'Proxy is on, skip the test!'
     fi      
-    test_page http://localhost:$WPPORT/ "WordPress" "test wordpress HTTP first page"
-    test_page https://localhost:$SSLWPPORT/ "WordPress" "test wordpress HTTPS first page"
+    test_page http://${TESTDOMAIN}:$WPPORT/ "WordPress" "test wordpress HTTP first page"
+    test_page https://${TESTDOMAIN}:$SSLWPPORT/ "WordPress" "test wordpress HTTPS first page"
 }
 
 function test_wordpress_plus
 {
     if [ ${PROXY} = 0 ]; then
-        test_page http://localhost:8088/  Congratulation "test Example vhost page"
+        test_page http://${TESTDOMAIN}:8088/  Congratulation "test Example vhost page"
     else
         echoG 'Proxy is on, skip the test!'
     fi        
@@ -2291,6 +2346,7 @@ function test_wordpress_plus
 function main_ols_test
 {
     echoCYAN "Start auto testing >> >> >> >>"
+    test_domain
     test_ols_admin
     if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ] || [ "${INSTALLWORDPRESS}" = '0' ]; then 
         test_ols
@@ -2482,6 +2538,11 @@ while [ ! -z "${1}" ] ; do
                 shift
                 WPTITLE=$FOLLOWPARAM
                 ;;
+        --sitedomain )       
+                check_value_follow "$2" "Site Domain"
+                shift
+                SITEDOMAIN=$FOLLOWPARAM
+                ;;                
         -[Uu] | --uninstall )       
                 ACTION=UNINSTALL
                 ;;
@@ -2492,7 +2553,16 @@ while [ ! -z "${1}" ] ; do
         --proxy-c )
                 PROXY=1
                 PROXY_TYPE='c'
-                ;;           
+                ;;     
+        --proxy-port)
+                check_value_follow "$2" "PROXY_PORT"
+                shift
+                PROXY_PORT=$FOLLOWPARAM
+                PROXY_SERVER="http://127.0.0.1:${PROXY_PORT}"
+                ;;         
+        --autocert )
+                AUTOCERT=1
+                ;;                        
         --owasp-enable )
                 if [ -e ${WEBCF} ]; then
                     SET_OWASP='ON'
