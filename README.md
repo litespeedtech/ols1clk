@@ -89,6 +89,7 @@ See below for additional options and usage examples.
 |  | `--autocert` | Installs ACME and enables **Automatic SSL Certificates** at the server level. |
 |  | `--proxy-r` | Configures a proxy that uses rewrite rules. |
 |  | `--proxy-c` | Configures a proxy that uses server configuration. |
+|  | `--proxy-s` | Configures a web socket proxy. |
 |  | `--proxy-port <port>` | Sets the proxy port. The default is `8080`. |
 
 ### Security Configuration

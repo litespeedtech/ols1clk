@@ -48,7 +48,8 @@ AUTOCERT=0
 PROXY=0
 PROXY_TYPE=''
 PROXY_PORT=8080
-PROXY_SERVER="http://127.0.0.1:${PROXY_PORT}"
+PROXY_IP=127.0.0.1
+PROXY_SERVER="http://${PROXY_IP}:${PROXY_PORT}"
 WORDPRESSPATH=$SERVER_ROOT/wordpress
 PWD_FILE=$SERVER_ROOT/password
 WPPORT=80
@@ -266,6 +267,7 @@ function usage
     echoW " --autocert                        " "To install ACME and enable Automatic SSL Certificates on server level"
     echoW " --proxy-r                         " "To set a proxy with rewrite type."
     echoW " --proxy-c                         " "To set a proxy with config type."
+    echoW " --proxy-s                         " "To set a web socket proxy."
     echoW " --proxy-port [PORT]               " "To set a proxy port, default value is 8080."
     echoNW "  -U,    --uninstall              " "${EPACE} To uninstall OpenLiteSpeed and remove installation directory."
     echoNW "  -P,    --purgeall               " "${EPACE} To uninstall OpenLiteSpeed, remove installation directory, and purge all data in MySQL."
@@ -1859,6 +1861,10 @@ function set_proxy_vh
         else
             echoY "PROXY_TYPE: ${PROXY_TYPE} is not found, will use rewrite type!"
             proxy_vh_rewrite
+        fi
+        if [ ${PROXY_TYPE} = 's' ]; then 
+            echoG 'Set Web Socket Proxy'
+            proxy_vh_socket
         fi    
     fi
 }
@@ -1889,6 +1895,16 @@ context / {
 }
 END
 }
+
+function proxy_vh_socket
+{
+    cat >> ${EXAMPLE_VHOSTCONF} <<END
+websocket / {
+  address                 ${PROXY_IP}:${PROXY_PORT}
+}
+END
+}
+
 
 function check_cur_status
 {
@@ -2278,6 +2294,10 @@ function after_install_display
         echo "Please substitute the Default proxy address [${PROXY_SERVER}] with your own value."
         echo "More, https://docs.openlitespeed.org/docs/advanced/proxy"
     fi
+    if [ "${PROXY_TYPE}" = 's' ]; then
+        echo "Please substitute the Default socket proxy address [${PROXY_IP}:${PROXY_PORT}] with your own value. More,"
+        echoB "https://docs.openlitespeed.org/config/reverseproxy/websocket/"
+    fi
     echoCYAN 'End OpenLiteSpeed one click installation << << << << << << <<'
     echo
 }
@@ -2553,7 +2573,11 @@ while [ ! -z "${1}" ] ; do
         --proxy-c )
                 PROXY=1
                 PROXY_TYPE='c'
-                ;;     
+                ;;
+        --proxy-s )
+                PROXY=1
+                PROXY_TYPE='s'
+                ;;                     
         --proxy-port)
                 check_value_follow "$2" "PROXY_PORT"
                 shift
