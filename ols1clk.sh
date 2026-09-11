@@ -623,11 +623,20 @@ function download_wordpress
         echoG "$WORDPRESSPATH exists, will use it."
     fi
     if [ "${WORDPRESSINSTALLED}" = '0' ];then 
-        wp core download \
-            --locale=$WPLANGUAGE \
-            --path=$WORDPRESSPATH \
-            --allow-root \
-            --quiet
+        ### WP CLI truncates file paths over 100 chars, wait new release, use download for now. 
+        #wp core download \
+        #    --locale=$WPLANGUAGE \
+        #    --path=$WORDPRESSPATH \
+        #    --allow-root \
+        #    --quiet
+        curl -fsSL https://wordpress.org/latest.zip -o "$WORDPRESSPATH/wordpress.zip" &&
+        unzip -q "$WORDPRESSPATH/wordpress.zip" -d "$WORDPRESSPATH" &&
+        mv "$WORDPRESSPATH/wordpress/"* "$WORDPRESSPATH/" &&
+        rmdir "$WORDPRESSPATH/wordpress" &&
+        rm -f "$WORDPRESSPATH/wordpress.zip" || {
+            echoG 'Failed to download or extract WordPress'
+            return 1
+        }        
     fi
     echoG 'End Download WordPress file'
 }
@@ -2406,6 +2415,7 @@ function main_init_package
     update_system
     check_wget
     check_curl
+    install_unzip
 }
 
 function main
